@@ -3,28 +3,59 @@ package main
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"strings"
 
+	qbittorrentapi "github.com/gabrielramos02/telegram-bot-go/internal/qbittorrent_api"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
 
 var bot *tgbotapi.BotAPI
+var qbConnection *qbittorrentapi.QbittorrentAPIClient
 
 func main() {
 	var err error
+
 	err = godotenv.Load(".env")
 	if err != nil {
 		log.Panic(err.Error())
 	}
+
 	BOT_TOKEN := os.Getenv("BOT_TOKEN")
-	fmt.Printf("%v", BOT_TOKEN)
 	if BOT_TOKEN == "" {
 		log.Panic("BOT_TOKEN env variable not set")
 	}
+
+	QB_URL := os.Getenv("QB_URL")
+	if QB_URL == "" {
+		log.Panic("QB_URL env variable not set")
+	}
+
+	QB_USERNAME := os.Getenv("QB_USERNAME")
+	if QB_USERNAME == "" {
+		log.Panic("QB_USERNAME env variable not set")
+	}
+
+	QB_PASSWORD := os.Getenv("QB_PASSWORD")
+	if QB_PASSWORD == "" {
+		log.Panic("QB_USERNAME env variable not set")
+	}
+
+	qbConnection = qbittorrentapi.NewAPIClient(QB_URL)
+	err = qbConnection.Login(QB_USERNAME, QB_PASSWORD)
+	if err != nil {
+		log.Fatalf("Error during login: %s", err.Error())
+	}
+	torrentList, err := qbConnection.GetTorrentList()
+	if err != nil {
+		log.Printf("%v", err.Error())
+	}
+	for _,torrent := range torrentList{
+		log.Printf("%v",torrent.Name)
+	}
+
 	bot, err = tgbotapi.NewBotAPI(BOT_TOKEN)
 	if err != nil {
 		log.Panic(err)
