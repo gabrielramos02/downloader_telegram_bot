@@ -15,8 +15,7 @@ import (
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
 
-const (
-)
+const ()
 
 func main() {
 	var err error
@@ -104,11 +103,11 @@ func handleMessage(message *tgbotapi.Message) {
 	var err error
 	if strings.HasPrefix(text, "/") {
 		err = handleCommand(message.Chat.ID, text)
+	} else {
+		err = handleUrl(message.Chat.ID, text)
 	}
-
 	if err != nil {
 		log.Printf("An error ocurred: %s", err)
-
 	}
 }
 
