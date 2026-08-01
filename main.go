@@ -16,14 +16,6 @@ var bot *tgbotapi.BotAPI
 var qb *qbt.Client
 
 const (
-	torrentList = `<pre>
-FILE                      SIZE     STATUS        PROGRESS       SPEED      ETA
--------------------------------------------------------------------------------
-ubuntu-24.04-desktop.iso  5.8 GB   Downloading   [██████░░░░]   12.5 MB/s  02m 15s
-dataset_v2_final.zip      1.2 GB   Completed     [██████████]   0 MB/s     Done
-video_render_4k.mp4       850 MB   Paused        [███░░░░░░░]   0 MB/s     Paused
-backup_database.sql.gz    320 MB   Failed        [█░░░░░░░░░]   0 MB/s     Error
-</pre>`
 )
 
 func main() {
@@ -58,13 +50,6 @@ func main() {
 	err = qb.Login(QB_USERNAME, QB_PASSWORD)
 	if err != nil {
 		log.Fatalf("Error during login: %s", err.Error())
-	}
-	torrentList, err := qb.Torrents(qbt.TorrentsOptions{})
-	if err != nil {
-		log.Printf("%v", err.Error())
-	}
-	for _, torrent := range torrentList {
-		log.Printf("%v", torrent.Name)
 	}
 
 	bot, err = tgbotapi.NewBotAPI(BOT_TOKEN)
@@ -129,31 +114,4 @@ func handleMessage(message *tgbotapi.Message) {
 
 func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 
-}
-
-func handleCommand(chatID int64, command string) error {
-	var err error
-	switch command {
-	case "/start":
-		err = sendStart(chatID)
-	case "/get_torrents":
-		err = getTorrents(chatID)
-	}
-
-	return err
-}
-
-func sendStart(chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, "Hello to my new bot")
-	msg.ParseMode = tgbotapi.ModeHTML
-	_, err := bot.Send(msg)
-
-	return err
-}
-
-func getTorrents(chatID int64) error {
-	msg := tgbotapi.NewMessage(chatID, torrentList)
-	msg.ParseMode = tgbotapi.ModeHTML
-	_, err := bot.Send(msg)
-	return err
 }
