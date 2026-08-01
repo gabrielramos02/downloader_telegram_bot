@@ -1,4 +1,4 @@
-package main
+package messages
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
-func buildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.MessageConfig {
+func BuildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.MessageConfig {
 	var messageText string
 	messageText = "<pre>\nFILE                      SIZE     STATUS        PROGRESS       SPEED      ETA\n-------------------------------------------------------------------------------\n"
 	for _, torrent := range torrentList {
