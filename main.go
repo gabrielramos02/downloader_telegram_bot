@@ -104,7 +104,7 @@ func handleMessage(message *tgbotapi.Message) {
 	if strings.HasPrefix(text, "/") {
 		err = handleCommand(message.Chat.ID, text)
 	} else {
-		_, err := handleUrl(message.Chat.ID, text)
+		err := handleUrl(message.Chat.ID, text)
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(message.Chat.ID, "Error: "+err.Error()))
 			if err != nil {
