@@ -95,8 +95,11 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 		msgText := fmt.Sprintf("✅ <b>Download Complete!</b> Your file: %s is ready.", torrent.Name)
 		finalMsg := tgbotapi.NewMessage(chatID, msgText)
 		finalMsg.ParseMode = tgbotapi.ModeHTML
-		bot.Send(finalMsg)
+		_, err = bot.Send(finalMsg)
 		_, err = bot.Send(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
+		if err != nil {
+			l.log.Error("Error deleting message", slog.Any("error", err))
+		}
 	}()
 }
 

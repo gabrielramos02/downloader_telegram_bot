@@ -67,5 +67,3 @@ func Attrs(err error) []slog.Attr {
 	}
 	return attrs
 }
-
-
