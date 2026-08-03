@@ -34,7 +34,7 @@ func main() {
 
 	err = godotenv.Load(".env")
 	if err != nil {
-		log.Panic(err.Error())
+		log.Panicf("failed to load .env file: %q", err)
 	}
 
 	BOT_TOKEN := os.Getenv("BOT_TOKEN")
@@ -101,7 +101,10 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	go receiveUpdates(ctx, updates)
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	_, err = bufio.NewReader(os.Stdin).ReadBytes('\n')
+	if err != nil {
+		l.log.Error("Error reading from stdin", slog.Any("error", err))
+	}
 	cancel()
 }
 
