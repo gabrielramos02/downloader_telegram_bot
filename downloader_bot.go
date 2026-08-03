@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -14,6 +16,16 @@ import (
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
+
+type loggerClient struct {
+	log   *slog.Logger
+	close closeFunc
+}
+
+var l *loggerClient = &loggerClient{
+	log:   slog.Default(),
+	close: func() error { return nil },
+}
 
 const ()
 
@@ -28,6 +40,10 @@ func main() {
 	BOT_TOKEN := os.Getenv("BOT_TOKEN")
 	if BOT_TOKEN == "" {
 		log.Panic("BOT_TOKEN env variable not set")
+	}
+	env := os.Getenv("ENV")
+	if env == "" {
+		log.Panic("ENV env variable not set")
 	}
 
 	QB_URL := os.Getenv("QB_URL")
@@ -44,21 +60,38 @@ func main() {
 	if QB_PASSWORD == "" {
 		log.Panic("QB_USERNAME env variable not set")
 	}
+	logger, closeLogger, err := initializeLogger()
+	logger = logger.With(
+		slog.String("env", env),
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to initialize logger: %v\n", err)
+	}
+	l = &loggerClient{
+		logger,
+		closeLogger,
+	}
+	defer func() {
+		if err = l.close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close logger: %v\n", err)
+		}
+	}()
 
 	qb = qbt.NewClient(QB_URL)
 	err = qb.Login(QB_USERNAME, QB_PASSWORD)
 	if err != nil {
-		log.Fatalf("Error during login: %s", err.Error())
+		l.log.Error("error during login", slog.Any("error", err))
 	}
 
 	bot, err = tgbotapi.NewBotAPI(BOT_TOKEN)
 	if err != nil {
-		log.Panic(err)
+		l.log.Error("error during bot initialization", slog.Any("error", err))
+		return
 	}
 
 	bot.Debug = true
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	l.log.Info("Authorized on account", slog.String("account", bot.Self.UserName))
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
@@ -108,12 +141,12 @@ func handleMessage(message *tgbotapi.Message) {
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(message.Chat.ID, "Error: "+err.Error()))
 			if err != nil {
-				log.Printf("An error ocurred: %s", err)
+				l.log.Error("Error sending error message", slog.Any("error", err))
 			}
 		}
 
 	}
 	if err != nil {
-		log.Printf("An error ocurred: %s", err)
+		l.log.Error("Error handling message", slog.Any("error", err))
 	}
 }

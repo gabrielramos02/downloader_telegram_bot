@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -11,7 +11,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 	if hash, exist := strings.CutPrefix(query.Data, "cancel:"); exist {
 		err := handleTorrentCancel(query.Message, hash)
 		if err != nil {
-			log.Printf("An error ocurred: %s", err)
+			l.log.Error("Error canceling torrent", slog.Any("error", err))
 		}
 	}
 }
