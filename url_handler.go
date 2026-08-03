@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
@@ -26,7 +27,7 @@ func handleUrl(chatID int64, urlString string) error {
 	case "magnet":
 		err = handleMagnetURL(chatID, urlList)
 		if err != nil {
-			return fmt.Errorf("failed to handle magnet URL: %v", err)
+			return err
 		}
 		return err
 
@@ -55,26 +56,29 @@ func handleMagnetURL(chatID int64, urlList []string) error {
 
 func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
+	mutex := sync.Mutex{}
 	cancelGoroutines[chatID] = cancel
 	go func() {
 		var torrent qbt.TorrentInfo
 		var err error
 		defer func() {
+			mutex.Lock()
 			delete(cancelGoroutines, chatID)
-			log.Printf("Goroutine for chatID %d has finished.", chatID)
+			mutex.Unlock()
+			l.log.Debug("Exiting goroutine for chatID", slog.Int64("chatID", chatID))
 		}()
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
-		for torrent.State != "stalledUP" && torrent.State != "stalledDL" && torrent.State != "error" && torrent.Progress < 1.0 {
+		for torrent.State != "stalledUP" && torrent.State != "error" && torrent.Progress < 1.0 {
 			select {
 			case <-ctx.Done():
-				log.Printf("Goroutine for chatID %d has been canceled.", chatID)
+				l.log.Debug("Goroutine canceled for chatID", slog.Int64("chatID", chatID))
 				return
 			case <-ticker.C:
 				torrent, err = getTorrentInfo(hash)
 				if err != nil {
-					log.Printf("failed to get torrent info: %v", err)
+					l.log.Error("Error getting torrent info", slog.Any("error", err))
 					continue
 				}
 				msg := messages.BuildTorrentInfo(chatID, torrent)
@@ -87,6 +91,7 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 				_, err = bot.Send(newMsg)
 			}
 		}
+		l.log.Debug("Torrent download completed or stopped for chatID", slog.Int64("chatID", chatID), slog.String("torrentName", torrent.Name), slog.String("torrentState", torrent.State), slog.Float64("torrentProgress", torrent.Progress))
 		msgText := fmt.Sprintf("✅ <b>Download Complete!</b> Your file: %s is ready.", torrent.Name)
 		finalMsg := tgbotapi.NewMessage(chatID, msgText)
 		finalMsg.ParseMode = tgbotapi.ModeHTML
