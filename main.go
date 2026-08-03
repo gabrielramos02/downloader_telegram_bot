@@ -117,7 +117,3 @@ func handleMessage(message *tgbotapi.Message) {
 		log.Printf("An error ocurred: %s", err)
 	}
 }
-
-func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
-
-}

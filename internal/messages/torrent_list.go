@@ -22,46 +22,6 @@ func BuildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.Mess
 
 }
 
-func BuildTorrentInfo(chatID int64, t qbt.TorrentInfo) tgbotapi.MessageConfig {
-
-	filled := int(t.Progress * 10)
-	if filled > 10 {
-		filled = 10
-	} else if filled < 0 {
-		filled = 0
-	}
-	progressBar := fmt.Sprintf("<code>[%s%s]</code> %.1f%%",
-		strings.Repeat("█", filled),
-		strings.Repeat("░", 10-filled),
-		t.Progress*100,
-	)
-	downloaded := t.Progress * float64(t.TotalSize)
-
-	// 3. Construir el mensaje HTML
-	htmlString := fmt.Sprintf(
-		"<b>📌 %s</b>\n\n"+
-			"<b>Progreso:</b> %s\n"+
-			"<b>Descargado:</b> %s / %s\n"+
-			"<b>Velocidad:</b> ⬇️ %s/s | ⬆️ %s/s\n"+
-			"<b>Tiempo restante:</b> %s\n"+
-			"<b>Semillas / Pares:</b> 🌱 %d | 👤 %d \n"+
-			"<b>Ruta:</b> <code>%s</code>",
-		escapeHTML(t.Name),
-		progressBar,
-		formatBytes(int64(downloaded)), formatBytes(int64(t.TotalSize)),
-		formatBytes(int64(t.Dlspeed)), formatBytes(int64(t.Upspeed)),
-		formatETA(int64(t.Eta), t.Progress),
-		t.NumSeeds, t.NumLeechs,
-		escapeHTML(t.SavePath),
-	)
-	msg := tgbotapi.NewMessage(chatID, htmlString)
-	msg.ParseMode = tgbotapi.ModeHTML
-	return msg
-}
-func escapeHTML(text string) string {
-	r := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
-	return r.Replace(text)
-}
 func formatRow(fileName string, sizeBytes int64, rawStatus string, progress float64, speedBytes int64, etaSeconds int64) string {
 	cleanName := truncateFilename(fileName, 23)
 	cleanSize := formatBytes(sizeBytes)
