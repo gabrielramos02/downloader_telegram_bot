@@ -23,5 +23,9 @@ func handleTorrentCancel(message *tgbotapi.Message, hash string) error {
 	}
 	cancelGoroutines[message.Chat.ID]()
 	_, err = bot.Send(tgbotapi.NewEditMessageText(message.Chat.ID, message.MessageID, "Torrent canceled successfully."))
+	if err != nil {
+		l.log.Error("Error sending message", slog.Any("error", err))
+		return err
+	}
 	return nil
 }
