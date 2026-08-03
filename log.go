@@ -32,7 +32,7 @@ func initializeLogger() (*slog.Logger, closeFunc, error) {
 		}
 		closeFunction = func() error {
 			if err := logger.Close(); err != nil {
-				return fmt.Errorf("Error Flushing file: %v", err)
+				return fmt.Errorf("error flushing file: %v", err)
 			}
 			return nil
 		}
@@ -57,14 +57,6 @@ type multiError interface {
 type stackTracer interface {
 	error
 	StackTrace() pkgerr.StackTrace
-}
-type contextKey string
-
-const logContextKey contextKey = "log_context"
-
-type LogContext struct {
-	Username string
-	Error    error
 }
 
 func errorAttrs(err error) []slog.Attr {

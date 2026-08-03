@@ -89,6 +89,10 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 				}
 
 				_, err = bot.Send(newMsg)
+				if err != nil {
+					l.log.Error("Error sending message", slog.Any("error", err))
+				}
+
 			}
 		}
 		l.log.Debug("Torrent download completed or stopped for chatID", slog.Int64("chatID", chatID), slog.String("torrentName", torrent.Name), slog.String("torrentState", torrent.State), slog.Float64("torrentProgress", torrent.Progress))
@@ -96,6 +100,9 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 		finalMsg := tgbotapi.NewMessage(chatID, msgText)
 		finalMsg.ParseMode = tgbotapi.ModeHTML
 		_, err = bot.Send(finalMsg)
+		if err != nil {
+			l.log.Error("Error sending final message", slog.Any("error", err))
+		}
 		_, err = bot.Send(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
 		if err != nil {
 			l.log.Error("Error deleting message", slog.Any("error", err))
