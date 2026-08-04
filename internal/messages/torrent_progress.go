@@ -38,7 +38,7 @@ func escapeHTML(text string) string {
 	r := strings.NewReplacer("<", "&lt;", ">", "&gt;", "&", "&amp;")
 	return r.Replace(text)
 }
-func buildProgressBar (progress float64) string {
+func buildProgressBar(progress float64) string {
 	filled := int(progress * 10)
 	if filled > 10 {
 		filled = 10
@@ -52,7 +52,7 @@ func buildProgressBar (progress float64) string {
 	)
 	return progressBar
 
-	}
+}
 
 func buildCancelMarkup(hash string) tgbotapi.InlineKeyboardMarkup {
 	data := fmt.Sprintf("cancel:%s", hash)
