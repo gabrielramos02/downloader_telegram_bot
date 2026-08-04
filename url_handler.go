@@ -17,29 +17,35 @@ import (
 var cancelGoroutines = make(map[int64]context.CancelFunc)
 
 func handleUrl(chatID int64, urlString string) error {
-	var urlList []string
-	urlObject, err := url.Parse(urlString)
+	URL, scheme, err := classifyURL(urlString)
 	if err != nil {
-		return fmt.Errorf("invalid URL: %v", err)
-	}
-	urlList = append(urlList, urlString)
-	switch urlObject.Scheme {
-	case "magnet":
-		err = handleMagnetURL(chatID, urlList)
-		if err != nil {
-			return err
-		}
 		return err
+	}
+	switch scheme {
+	case "magnet":
+		return handleMagnetURL(chatID, URL)
 
 	default:
-		return fmt.Errorf("unsupported URL scheme: %s", urlObject.Scheme)
+		return nil
 	}
+}
+func classifyURL(urlString string) (string, string, error) {
+	urlObject, err := url.Parse(urlString)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid URL: %v", err)
+	}
+	switch urlObject.Scheme {
+	case "magnet":
+		return urlString, "magnet", nil
+	default:
+		return "", "", fmt.Errorf("unsupported URL scheme: %s", urlObject.Scheme)
 
+	}
 }
 
-func handleMagnetURL(chatID int64, urlList []string) error {
+func handleMagnetURL(chatID int64, URL string) error {
 	var err error
-	hash, err := addTorrent(urlList)
+	hash, err := addTorrent(URL)
 	if err != nil {
 		return fmt.Errorf("failed to add torrent: %v", err)
 	}
@@ -70,7 +76,7 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
-		for torrent.State != "stalledUP" && torrent.State != "error" && torrent.Progress < 1.0 {
+		for isTorrentInProgress(torrent) {
 			select {
 			case <-ctx.Done():
 				l.log.Debug("Goroutine canceled for chatID", slog.Int64("chatID", chatID))
@@ -109,6 +115,9 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 		}
 	}()
 }
+func isTorrentInProgress(torrent qbt.TorrentInfo) bool {
+	return torrent.State != "stalledUP" && torrent.State != "error" && torrent.Progress < 1.0
+}
 
 func extractHashFromMagnet(magnetURL string) (string, error) {
 	u, err := url.Parse(magnetURL)
@@ -128,14 +137,15 @@ func extractHashFromMagnet(magnetURL string) (string, error) {
 	return "", fmt.Errorf("no BTIH hash found in magnet URL")
 }
 
-func addTorrent(urlList []string) (string, error) {
+func addTorrent(url string) (string, error) {
 	var hash string
 	paused := true
-	err := qb.DownloadLinks(urlList, qbt.DownloadOptions{Paused: &paused})
+	URLs := []string{url}
+	err := qb.DownloadLinks(URLs, qbt.DownloadOptions{Paused: &paused})
 	if err != nil {
 		return hash, err
 	}
-	hash, err = extractHashFromMagnet(urlList[0])
+	hash, err = extractHashFromMagnet(URLs[0])
 	if err != nil {
 		return hash, err
 	}

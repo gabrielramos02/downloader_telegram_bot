@@ -16,6 +16,7 @@ import (
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
+var requiredEnvVars = []string{"BOT_TOKEN", "ENV", "QB_URL", "QB_USERNAME", "QB_PASSWORD"}
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -36,33 +37,20 @@ func main() {
 	if err != nil {
 		log.Panicf("failed to load .env file: %q", err)
 	}
-
-	BOT_TOKEN := os.Getenv("BOT_TOKEN")
-	if BOT_TOKEN == "" {
-		log.Panic("BOT_TOKEN env variable not set")
-	}
-	env := os.Getenv("ENV")
-	if env == "" {
-		log.Panic("ENV env variable not set")
-	}
-
-	QB_URL := os.Getenv("QB_URL")
-	if QB_URL == "" {
-		log.Panic("QB_URL env variable not set")
+	cfg, err := loadConfig(map[string]string{
+		"BOT_TOKEN":   os.Getenv("BOT_TOKEN"),
+		"ENV":         os.Getenv("ENV"),
+		"QB_URL":      os.Getenv("QB_URL"),
+		"QB_USERNAME": os.Getenv("QB_USERNAME"),
+		"QB_PASSWORD": os.Getenv("QB_PASSWORD"),
+	})
+	if err != nil {
+		log.Panic(err.Error())
 	}
 
-	QB_USERNAME := os.Getenv("QB_USERNAME")
-	if QB_USERNAME == "" {
-		log.Panic("QB_USERNAME env variable not set")
-	}
-
-	QB_PASSWORD := os.Getenv("QB_PASSWORD")
-	if QB_PASSWORD == "" {
-		log.Panic("QB_USERNAME env variable not set")
-	}
 	logger, closeLogger, err := initializeLogger()
 	logger = logger.With(
-		slog.String("env", env),
+		slog.String("env", cfg.Env),
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize logger: %v\n", err)
@@ -77,13 +65,13 @@ func main() {
 		}
 	}()
 
-	qb = qbt.NewClient(QB_URL)
-	err = qb.Login(QB_USERNAME, QB_PASSWORD)
+	qb = qbt.NewClient(cfg.QBURL)
+	err = qb.Login(cfg.QBUsername, cfg.QBPassword)
 	if err != nil {
 		l.log.Error("error during login", slog.Any("error", err))
 	}
 
-	bot, err = tgbotapi.NewBotAPI(BOT_TOKEN)
+	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		l.log.Error("error during bot initialization", slog.Any("error", err))
 		return
@@ -106,6 +94,35 @@ func main() {
 		l.log.Error("Error reading from stdin", slog.Any("error", err))
 	}
 	cancel()
+}
+func validateEnvVars(vars map[string]string) error {
+	for _, v := range requiredEnvVars {
+		if vars[v] == "" {
+			return fmt.Errorf("required env variable %s not set", v)
+		}
+	}
+	return nil
+}
+
+type config struct {
+	BotToken   string
+	Env        string
+	QBURL      string
+	QBUsername string
+	QBPassword string
+}
+
+func loadConfig(vars map[string]string) (config, error) {
+	if err := validateEnvVars(vars); err != nil {
+		return config{}, err
+	}
+	return config{
+		BotToken:   vars["BOT_TOKEN"],
+		Env:        vars["ENV"],
+		QBURL:      vars["QB_URL"],
+		QBUsername: vars["QB_USERNAME"],
+		QBPassword: vars["QB_PASSWORD"],
+	}, nil
 }
 
 func receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
@@ -137,7 +154,7 @@ func handleMessage(message *tgbotapi.Message) {
 		return
 	}
 	var err error
-	if strings.HasPrefix(text, "/") {
+	if isCommand(text) {
 		err = handleCommand(message.Chat.ID, text)
 	} else {
 		err := handleUrl(message.Chat.ID, text)
@@ -152,4 +169,7 @@ func handleMessage(message *tgbotapi.Message) {
 	if err != nil {
 		l.log.Error("Error handling message", slog.Any("error", err))
 	}
+}
+func isCommand(text string) bool {
+	return strings.HasPrefix(text, "/")
 }
