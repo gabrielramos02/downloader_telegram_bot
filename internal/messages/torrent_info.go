@@ -25,7 +25,6 @@ func BuildTorrentInfo(chatID int64, torrent qbt.TorrentInfo) tgbotapi.MessageCon
 	msgText += fmt.Sprintf("<b>Seeds / Leechs:</b> <code>%d / %d</code>\n", torrent.NumSeeds, torrent.NumLeechs)
 	msgText += fmt.Sprintf("<b>ETA:</b> <code>%s</code>\n\n", formatETA(torrent.Eta, torrent.Progress))
 
-
 	/* // Dynamic Action Buttons (Pause vs Resume depending on state)
 	var toggleBtn tgbotapi.InlineKeyboardButton
 	if strings.HasPrefix(torrent.State, "paused") || strings.HasPrefix(torrent.State, "stalled") {
