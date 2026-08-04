@@ -9,3 +9,52 @@
 {"time":"2026-08-03T19:57:24.082074592+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
 {"time":"2026-08-03T20:03:50.40938449+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
 {"time":"2026-08-03T20:07:26.861276023+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:42:10.690937284+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:42:47.821593578+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"Bad Request: field \"inline_keyboard\" must be of type Array"}}
+{"time":"2026-08-03T22:45:31.077182532+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:48:48.240734042+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:48:51.226399019+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:48:57.648791485+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"Bad Request: field \"inline_keyboard\" must be of type Array"}}
+{"time":"2026-08-03T22:49:16.275918364+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:49:46.409260714+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:49:52.874448325+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"Bad Request: field \"inline_keyboard\" must be of type Array"}}
+{"time":"2026-08-03T22:50:24.845017375+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:50:28.237846695+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"Bad Request: field \"inline_keyboard\" must be of type Array"}}
+{"time":"2026-08-03T22:51:20.51364312+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:51:23.591227929+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"Bad Request: field \"inline_keyboard\" must be of type Array"}}
+{"time":"2026-08-03T22:52:04.864212752+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:52:33.128363968+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:55:44.250801795+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T22:57:59.889272439+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:01:53.194882287+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:03:23.255047592+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:15:20.89550086+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:16:36.423706567+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:16:38.776570621+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:16:42.292352668+02:00","level":"ERROR","msg":"No torrent info found for hash","env":"development","hash":"0"}
+{"time":"2026-08-03T23:16:42.292507078+02:00","level":"ERROR","msg":"Error getting torrent info","env":"development","error":{"message":"no torrent info found for hash: 0"}}
+{"time":"2026-08-03T23:16:42.292556842+02:00","level":"ERROR","msg":"Error getting torrent info","env":"development","error":{"message":"no torrent info found for hash: 0"}}
+{"time":"2026-08-03T23:18:14.80036829+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:18:19.094936386+02:00","level":"ERROR","msg":"Error getting torrent info","env":"development","error":{"message":"no torrent info found for hash: 0"}}
+{"time":"2026-08-03T23:19:47.820986723+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:19:51.514988434+02:00","level":"ERROR","msg":"Error sending torrent info message","env":"development","error":{"message":"Bad Request: message text is empty"}}
+{"time":"2026-08-03T23:19:51.515163081+02:00","level":"ERROR","msg":"Error getting torrent info","env":"development","error":{"message":"Bad Request: message text is empty"}}
+{"time":"2026-08-03T23:23:53.875226437+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:24:27.100045005+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:25:54.463012585+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:26:43.60171729+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:26:46.407226826+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:28:28.760814182+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:28:34.664393196+02:00","level":"ERROR","msg":"Error getting torrent info","env":"development","error":{"message":"no torrent info found for hash: 108ad46704e856b279de9b1aad76ed697a3a2bcc"}}
+{"time":"2026-08-03T23:29:36.649385707+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:38:58.116828285+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:39:05.53197423+02:00","level":"ERROR","msg":"Error handling message","env":"development","error":{"message":"no torrent info found for hash: 108ad46704"}}
+{"time":"2026-08-03T23:39:44.722345578+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-03T23:40:07.272357151+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:06:49.689547432+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:13:06.057413562+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:13:29.939981197+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:15:41.042161908+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:16:34.791668754+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:17:21.141143197+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}
+{"time":"2026-08-04T09:18:34.284072913+02:00","level":"INFO","msg":"Authorized on account","env":"development","account":"url_uploader_02_bot"}

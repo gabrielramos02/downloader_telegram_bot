@@ -47,7 +47,7 @@ func handleMagnetURL(chatID int64, urlList []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get torrent info: %v", err)
 	}
-	msg := messages.BuildTorrentInfo(chatID, torrent)
+	msg := messages.BuildTorrentProgress(chatID, torrent)
 
 	msgSended, err := bot.Send(msg)
 	sendTorrentInfo(chatID, hash, msgSended)
@@ -81,7 +81,7 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 					l.log.Error("Error getting torrent info", slog.Any("error", err))
 					continue
 				}
-				msg := messages.BuildTorrentInfo(chatID, torrent)
+				msg := messages.BuildTorrentProgress(chatID, torrent)
 				newMsg := tgbotapi.NewEditMessageText(chatID, msgSended.MessageID, msg.Text)
 				newMsg.ParseMode = tgbotapi.ModeHTML
 				if markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
@@ -145,6 +145,9 @@ func addTorrent(urlList []string) (string, error) {
 
 func getTorrentInfo(hash string) (qbt.TorrentInfo, error) {
 	torrentInfoList, err := qb.Torrents(qbt.TorrentsOptions{Hashes: []string{hash}})
+	if len(torrentInfoList) == 0 {
+		return qbt.TorrentInfo{}, fmt.Errorf("no torrent info found for hash: %s", hash)
+	}
 	if err != nil {
 		return torrentInfoList[0], err
 	}

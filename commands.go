@@ -15,6 +15,8 @@ func handleCommand(chatID int64, command string) error {
 		err = sendStart(chatID)
 	case "/get_torrents":
 		err = getTorrents(chatID)
+	default:
+
 	}
 
 	return err
@@ -35,7 +37,13 @@ func getTorrents(chatID int64) error {
 		l.log.Error("Error getting torrents", slog.Any("error", err))
 
 	}
-	msg := messages.BuildTorrentList(chatID, torrentList)
+	var msg tgbotapi.MessageConfig
+	if len(torrentList) == 0 {
+		msg = tgbotapi.NewMessage(chatID, "No torrents found.")
+	} else {
+		msg = messages.BuildTorrentList(chatID, torrentList)
+
+	}
 	_, err = bot.Send(msg)
 	l.log.Debug("Get torrents command executed", slog.Int64("chatID", chatID), slog.Int("torrentCount", len(torrentList)))
 	return err

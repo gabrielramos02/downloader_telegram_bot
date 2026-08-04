@@ -2,7 +2,6 @@ package messages
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -18,6 +17,7 @@ func BuildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.Mess
 	messageText += "</pre>"
 	msg := tgbotapi.NewMessage(chatID, messageText)
 	msg.ParseMode = tgbotapi.ModeHTML
+	msg.ReplyMarkup = buildInlineKeyboard(torrentList)
 	return msg
 
 }
@@ -29,8 +29,7 @@ func formatRow(fileName string, sizeBytes int64, rawStatus string, progress floa
 	cleanSpeed := formatBytes(speedBytes) + "/s"
 	cleanETA := formatETA(etaSeconds, progress)
 
-	filled := int(progress * 10)
-	progressBar := "[" + strings.Repeat("█", filled) + strings.Repeat("░", 10-filled) + "]"
+	progressBar := buildProgressBar(progress)
 
 	return fmt.Sprintf("%-22s %-8s %-13s %-12s   %-8s %s\n",
 		cleanName,
@@ -96,4 +95,14 @@ func truncateFilename(name string, maxLen int) string {
 		return name
 	}
 	return string(runes[:maxLen-3]) + "..."
+}
+
+func buildInlineKeyboard(torrentList []qbt.TorrentInfo) tgbotapi.InlineKeyboardMarkup {
+	var buttons [][]tgbotapi.InlineKeyboardButton
+	for i, t := range torrentList {
+		btnTxt := fmt.Sprintf("🔍 Ver #%d (%s)", i+1, truncateFilename(t.Name, 15))
+		btn := tgbotapi.NewInlineKeyboardButtonData(btnTxt, fmt.Sprintf("info:%s", t.Hash))
+		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(btn))
+	}
+	return tgbotapi.NewInlineKeyboardMarkup(buttons...)
 }
