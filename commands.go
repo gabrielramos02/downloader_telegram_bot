@@ -8,18 +8,37 @@ import (
 	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
+const (
+	startCommand       = "start"
+	getTorrentsCommand = "get_torrents"
+)
+
 func handleCommand(chatID int64, command string) error {
-	var err error
-	switch command {
-	case "/start":
-		err = sendStart(chatID)
-	case "/get_torrents":
-		err = getTorrents(chatID)
+	action, ok := commandAction(command)
+	if !ok {
+		return nil
+	}
+	switch action {
+	case startCommand:
+		return sendStart(chatID)
+	case getTorrentsCommand:
+		return getTorrents(chatID)
 	default:
+		return nil
 
 	}
 
-	return err
+}
+
+func commandAction(command string) (string, bool) {
+	switch command {
+	case "/start":
+		return startCommand, true
+	case "/get_torrents":
+		return getTorrentsCommand, true
+	default:
+		return "", false
+	}
 }
 
 func sendStart(chatID int64) error {
@@ -27,7 +46,6 @@ func sendStart(chatID int64) error {
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err := bot.Send(msg)
 	l.log.Debug("Start command executed", slog.Int64("chatID", chatID))
-
 	return err
 }
 

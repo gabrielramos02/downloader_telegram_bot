@@ -9,22 +9,37 @@ import (
 )
 
 func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
-	if hash, exist := strings.CutPrefix(query.Data, "cancel:"); exist {
+	action, hash, ok := parseCallbackData(query.Data)
+	if !ok {
+		return
+	}
+	switch action {
+	case "cancel":
 		err := handleTorrentCancel(query.Message, hash)
 		if err != nil {
 			l.log.Error("Error canceling torrent", slog.Any("error", err))
 		}
-	} else if hash, exist := strings.CutPrefix(query.Data, "info:"); exist {
+	case "info":
 		err := handleTorrentInfo(query.From.ID, hash)
 		if err != nil {
 			l.log.Error("Error getting torrent info", slog.Any("error", err))
 		}
-	} else if hash, exist := strings.CutPrefix(query.Data, "refresh:"); exist {
+	case "refresh":
 		err := handleRefreshTorrentInfo(query, hash)
 		if err != nil {
-			return
+			l.log.Error("Error refreshing torrent info", slog.Any("error", err))
+		}
+
+	}
+}
+func parseCallbackData(data string) (action string, hash string, ok bool) {
+	for _, action := range []string{"cancel", "info", "refresh"} {
+		if hash, exists := strings.CutPrefix(data, action+":"); exists {
+			return action, hash, true
 		}
 	}
+	return "", "", false
+
 }
 
 func handleTorrentCancel(message *tgbotapi.Message, hash string) error {
