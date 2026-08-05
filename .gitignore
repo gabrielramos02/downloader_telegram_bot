@@ -1,2 +1,4 @@
 .env
 ./telegram-bot-go
+/tmp
+bot.log
