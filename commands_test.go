@@ -22,7 +22,14 @@ func TestCommandAction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, ok := commandAction(tt.in)
 			if got != tt.want || ok != tt.wantOK {
-				t.Errorf("commandAction(%q) = (%q, %v), want (%q, %v)", tt.in, got, ok, tt.want, tt.wantOK)
+				t.Errorf(
+					"commandAction(%q) = (%q, %v), want (%q, %v)",
+					tt.in,
+					got,
+					ok,
+					tt.want,
+					tt.wantOK,
+				)
 			}
 		})
 	}

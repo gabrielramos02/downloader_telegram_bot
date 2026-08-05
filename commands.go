@@ -63,6 +63,10 @@ func getTorrents(chatID int64) error {
 
 	}
 	_, err = bot.Send(msg)
-	l.log.Debug("Get torrents command executed", slog.Int64("chatID", chatID), slog.Int("torrentCount", len(torrentList)))
+	l.log.Debug(
+		"Get torrents command executed",
+		slog.Int64("chatID", chatID),
+		slog.Int("torrentCount", len(torrentList)),
+	)
 	return err
 }

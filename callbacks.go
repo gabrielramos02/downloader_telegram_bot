@@ -50,7 +50,13 @@ func handleTorrentCancel(message *tgbotapi.Message, hash string) error {
 	if cancel, exists := cancelGoroutines[message.Chat.ID]; exists && cancel != nil {
 		cancel()
 	}
-	_, err = bot.Send(tgbotapi.NewEditMessageText(message.Chat.ID, message.MessageID, "Torrent canceled successfully."))
+	_, err = bot.Send(
+		tgbotapi.NewEditMessageText(
+			message.Chat.ID,
+			message.MessageID,
+			"Torrent canceled successfully.",
+		),
+	)
 	if err != nil {
 		l.log.Error("Error sending message", slog.Any("error", err))
 		return err
@@ -80,7 +86,12 @@ func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, hash string) error 
 	msg := messages.BuildTorrentInfo(query.Message.Chat.ID, torrent)
 	var newMsg tgbotapi.EditMessageTextConfig
 	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
-		newMsg = tgbotapi.NewEditMessageTextAndMarkup(query.Message.Chat.ID, query.Message.MessageID, msg.Text, replyMarkup)
+		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			msg.Text,
+			replyMarkup,
+		)
 		newMsg.ParseMode = tgbotapi.ModeHTML
 	}
 	_, err = bot.Send(newMsg)

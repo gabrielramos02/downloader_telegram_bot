@@ -291,7 +291,15 @@ func TestBuildTorrentList(t *testing.T) {
 	})
 	t.Run("single torrent row and keyboard", func(t *testing.T) {
 		torrents := []qbt.TorrentInfo{
-			{Name: "movie.iso", Size: 1073741824, State: "downloading", Progress: 0.5, Dlspeed: 102400, Eta: 7200, Hash: "h1"},
+			{
+				Name:     "movie.iso",
+				Size:     1073741824,
+				State:    "downloading",
+				Progress: 0.5,
+				Dlspeed:  102400,
+				Eta:      7200,
+				Hash:     "h1",
+			},
 		}
 		msg := BuildTorrentList(1, torrents)
 		for _, want := range []string{"movie.iso", "1.0GB", "⏬ Downloading", "100.0KB/s", "2h 0m"} {

@@ -21,9 +21,20 @@ func BuildTorrentInfo(chatID int64, torrent qbt.TorrentInfo) tgbotapi.MessageCon
 	msgText += fmt.Sprintf("<b>State:</b> %s \n", status)
 	msgText += fmt.Sprintf("<b>Progress:</b> <code>%s </code>\n", progressBar)
 	msgText += fmt.Sprintf("<b>Size:</b> <code>%s</code>\n", formatBytes(torrent.Size))
-	msgText += fmt.Sprintf("<b>Speed:</b> ⬇️ <code>%s/s</code> | ⬆️ <code>%s/s</code>\n", formatBytes(torrent.Dlspeed), formatBytes(torrent.Upspeed))
-	msgText += fmt.Sprintf("<b>Seeds / Leechs:</b> <code>%d / %d</code>\n", torrent.NumSeeds, torrent.NumLeechs)
-	msgText += fmt.Sprintf("<b>ETA:</b> <code>%s</code>\n\n", formatETA(torrent.Eta, torrent.Progress))
+	msgText += fmt.Sprintf(
+		"<b>Speed:</b> ⬇️ <code>%s/s</code> | ⬆️ <code>%s/s</code>\n",
+		formatBytes(torrent.Dlspeed),
+		formatBytes(torrent.Upspeed),
+	)
+	msgText += fmt.Sprintf(
+		"<b>Seeds / Leechs:</b> <code>%d / %d</code>\n",
+		torrent.NumSeeds,
+		torrent.NumLeechs,
+	)
+	msgText += fmt.Sprintf(
+		"<b>ETA:</b> <code>%s</code>\n\n",
+		formatETA(torrent.Eta, torrent.Progress),
+	)
 
 	/* // Dynamic Action Buttons (Pause vs Resume depending on state)
 	var toggleBtn tgbotapi.InlineKeyboardButton

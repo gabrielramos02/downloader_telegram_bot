@@ -12,7 +12,14 @@ func BuildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.Mess
 	var messageText string
 	messageText = "<pre>\nFILE                      SIZE     STATUS        PROGRESS       SPEED      ETA\n-------------------------------------------------------------------------------\n"
 	for _, torrent := range torrentList {
-		messageText += formatRow(torrent.Name, torrent.Size, torrent.State, torrent.Progress, torrent.Dlspeed, torrent.Eta)
+		messageText += formatRow(
+			torrent.Name,
+			torrent.Size,
+			torrent.State,
+			torrent.Progress,
+			torrent.Dlspeed,
+			torrent.Eta,
+		)
 	}
 	messageText += "</pre>"
 	msg := tgbotapi.NewMessage(chatID, messageText)
@@ -22,7 +29,14 @@ func BuildTorrentList(chatID int64, torrentList []qbt.TorrentInfo) tgbotapi.Mess
 
 }
 
-func formatRow(fileName string, sizeBytes int64, rawStatus string, progress float64, speedBytes int64, etaSeconds int64) string {
+func formatRow(
+	fileName string,
+	sizeBytes int64,
+	rawStatus string,
+	progress float64,
+	speedBytes int64,
+	etaSeconds int64,
+) string {
 	cleanName := truncateFilename(fileName, 23)
 	cleanSize := formatBytes(sizeBytes)
 	cleanStatusStr := formatStatus(rawStatus)

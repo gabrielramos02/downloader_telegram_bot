@@ -41,7 +41,13 @@ func TestLoadConfig(t *testing.T) {
 		if err != nil {
 			t.Fatalf("loadConfig unexpected error: %v", err)
 		}
-		want := config{BotToken: "tok", Env: "prod", QBURL: "http://qb:8080", QBUsername: "admin", QBPassword: "secret"}
+		want := config{
+			BotToken:   "tok",
+			Env:        "prod",
+			QBURL:      "http://qb:8080",
+			QBUsername: "admin",
+			QBPassword: "secret",
+		}
 		if cfg != want {
 			t.Errorf("loadConfig = %+v, want %+v", cfg, want)
 		}
@@ -61,7 +67,10 @@ func TestLoadConfig(t *testing.T) {
 		}
 	})
 	t.Run("empty env reports first missing", func(t *testing.T) {
-		if _, err := loadConfig(map[string]string{}); err == nil || !strings.Contains(err.Error(), "BOT_TOKEN") {
+		if _, err := loadConfig(
+			map[string]string{},
+		); err == nil ||
+			!strings.Contains(err.Error(), "BOT_TOKEN") {
 			t.Errorf("expected error mentioning BOT_TOKEN, got %v", err)
 		}
 	})

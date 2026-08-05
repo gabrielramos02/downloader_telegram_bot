@@ -94,7 +94,10 @@ func replaceAttr(groups []string, a slog.Attr) slog.Attr {
 		if me, ok := a.Value.Any().(multiError); ok {
 			var errAttrs []slog.Attr
 			for i, err := range me.Unwrap() {
-				errAttrs = append(errAttrs, slog.Any(fmt.Sprintf("error_%d", i+1), loggerErr.Attrs(err)))
+				errAttrs = append(
+					errAttrs,
+					slog.Any(fmt.Sprintf("error_%d", i+1), loggerErr.Attrs(err)),
+				)
 			}
 			return slog.GroupAttrs("errors", errAttrs...)
 		}

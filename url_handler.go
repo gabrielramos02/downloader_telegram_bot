@@ -101,7 +101,13 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 
 			}
 		}
-		l.log.Debug("Torrent download completed or stopped for chatID", slog.Int64("chatID", chatID), slog.String("torrentName", torrent.Name), slog.String("torrentState", torrent.State), slog.Float64("torrentProgress", torrent.Progress))
+		l.log.Debug(
+			"Torrent download completed or stopped for chatID",
+			slog.Int64("chatID", chatID),
+			slog.String("torrentName", torrent.Name),
+			slog.String("torrentState", torrent.State),
+			slog.Float64("torrentProgress", torrent.Progress),
+		)
 		msgText := fmt.Sprintf("✅ <b>Download Complete!</b> Your file: %s is ready.", torrent.Name)
 		finalMsg := tgbotapi.NewMessage(chatID, msgText)
 		finalMsg.ParseMode = tgbotapi.ModeHTML

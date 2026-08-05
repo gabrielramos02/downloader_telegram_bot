@@ -42,7 +42,11 @@ func TestClassifyURL(t *testing.T) {
 			url, scheme, err := classifyURL(tt.in)
 			if tt.wantErr != "" {
 				if err == nil {
-					t.Fatalf("classifyURL(%q) expected error containing %q, got nil", tt.in, tt.wantErr)
+					t.Fatalf(
+						"classifyURL(%q) expected error containing %q, got nil",
+						tt.in,
+						tt.wantErr,
+					)
 				}
 				if !strings.Contains(err.Error(), tt.wantErr) {
 					t.Errorf("classifyURL(%q) error = %q, want contains %q", tt.in, err, tt.wantErr)
@@ -118,10 +122,19 @@ func TestExtractHashFromMagnet(t *testing.T) {
 			got, err := extractHashFromMagnet(tt.in)
 			if tt.wantErr != "" {
 				if err == nil {
-					t.Fatalf("extractHashFromMagnet(%q) expected error containing %q, got nil", tt.in, tt.wantErr)
+					t.Fatalf(
+						"extractHashFromMagnet(%q) expected error containing %q, got nil",
+						tt.in,
+						tt.wantErr,
+					)
 				}
 				if !strings.Contains(err.Error(), tt.wantErr) {
-					t.Errorf("extractHashFromMagnet(%q) error = %q, want contains %q", tt.in, err, tt.wantErr)
+					t.Errorf(
+						"extractHashFromMagnet(%q) error = %q, want contains %q",
+						tt.in,
+						err,
+						tt.wantErr,
+					)
 				}
 				return
 			}
