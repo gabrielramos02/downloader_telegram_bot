@@ -1,22 +1,32 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"github.com/superturkey650/go-qbittorrent/qbt"
+	"golift.io/nzbget"
 )
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
-var requiredEnvVars = []string{"BOT_TOKEN", "ENV", "QB_URL", "QB_USERNAME", "QB_PASSWORD"}
+var nzb *nzbget.NZBGet
+
+var requiredEnvVars = []string{
+	"BOT_TOKEN",
+	"ENV",
+	"QB_URL",
+	"QB_USERNAME",
+	"QB_PASSWORD",
+}
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -65,10 +75,16 @@ func main() {
 		}
 	}()
 
+	// Initialize qBittorrent client
 	qb = qbt.NewClient(cfg.QBURL)
 	err = qb.Login(cfg.QBUsername, cfg.QBPassword)
 	if err != nil {
 		l.log.Error("error during login", slog.Any("error", err))
+	}
+	if qbVersion, err := qb.WebAPIVersion(); err != nil {
+		l.log.Error("error getting qBittorrent version", slog.Any("error", err))
+	} else {
+		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
 	}
 
 	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)
@@ -89,10 +105,9 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	go receiveUpdates(ctx, updates)
-	_, err = bufio.NewReader(os.Stdin).ReadBytes('\n')
-	if err != nil {
-		l.log.Error("Error reading from stdin", slog.Any("error", err))
-	}
+	stopCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-stopCtx.Done()
 	cancel()
 }
 func validateEnvVars(vars map[string]string) error {
