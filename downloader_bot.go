@@ -10,15 +10,15 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/gabrielramos02/telegram-bot-go/internal/gopeed"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"github.com/superturkey650/go-qbittorrent/qbt"
-	"golift.io/nzbget"
 )
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
-var nzb *nzbget.NZBGet
+var gp *gopeed.GopeedClient
 
 var requiredEnvVars = []string{
 	"BOT_TOKEN",
@@ -85,6 +85,16 @@ func main() {
 		l.log.Error("error getting qBittorrent version", slog.Any("error", err))
 	} else {
 		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
+	}
+	// Initialize Gopeed client
+	gp, err = gopeed.NewClient("http://192.168.0.44:9999")
+	if err != nil {
+		l.log.Error("error during Gopeed client initialization", slog.Any("error", err))
+	}
+	if info, err := gp.GetInfo(""); err != nil {
+		l.log.Error("error getting Gopeed info", slog.Any("error", err))
+	} else {
+		l.log.Info("Gopeed info", slog.String("version", info.Version))
 	}
 
 	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)
