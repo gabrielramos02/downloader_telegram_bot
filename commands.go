@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	startCommand       = "start"
-	getTorrentsCommand = "get_torrents"
+	startCommand              = "start"
+	getTorrentsCommand        = "get_torrents"
+	getDirectDownloadsCommand = "/get_direct_downloads"
 )
 
 func handleCommand(chatID int64, command string) error {
@@ -23,6 +24,8 @@ func handleCommand(chatID int64, command string) error {
 		return sendStart(chatID)
 	case getTorrentsCommand:
 		return getTorrents(chatID)
+	case getDirectDownloadsCommand:
+		return getDirectDownloads(chatID)
 	default:
 		return nil
 
@@ -36,6 +39,8 @@ func commandAction(command string) (string, bool) {
 		return startCommand, true
 	case "/get_torrents":
 		return getTorrentsCommand, true
+	case "/get_direct_downloads":
+		return getDirectDownloadsCommand, true
 	default:
 		return "", false
 	}
@@ -45,8 +50,11 @@ func sendStart(chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, "Hello to my new bot")
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err := bot.Send(msg)
+	if err != nil {
+		return err
+	}
 	l.log.Debug("Start command executed", slog.Int64("chatID", chatID))
-	return err
+	return nil
 }
 
 func getTorrents(chatID int64) error {
@@ -63,10 +71,30 @@ func getTorrents(chatID int64) error {
 
 	}
 	_, err = bot.Send(msg)
+	if err != nil {
+		return err
+	}
 	l.log.Debug(
 		"Get torrents command executed",
 		slog.Int64("chatID", chatID),
 		slog.Int("torrentCount", len(torrentList)),
 	)
-	return err
+	return nil
+}
+func getDirectDownloads(chatID int64) error {
+	tasks, err := gp.GetTasks()
+	if err != nil {
+		return err
+	}
+	var msg tgbotapi.MessageConfig
+	if len(tasks) == 0 {
+		msg = tgbotapi.NewMessage(chatID, "No direct download tasks found.")
+	} else {
+		msg = messages.BuildDirectDownloads(chatID, tasks)
+	}
+	_, err = bot.Send(msg)
+	if err != nil {
+		return err
+	}
+	return nil
 }

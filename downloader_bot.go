@@ -1,14 +1,16 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"log"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
+	gopeed "github.com/gabrielramos02/telegram-bot-go/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"github.com/superturkey650/go-qbittorrent/qbt"
@@ -16,7 +18,15 @@ import (
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
-var requiredEnvVars = []string{"BOT_TOKEN", "ENV", "QB_URL", "QB_USERNAME", "QB_PASSWORD"}
+var gp *gopeed.GopeedClient
+
+var requiredEnvVars = []string{
+	"BOT_TOKEN",
+	"ENV",
+	"QB_URL",
+	"QB_USERNAME",
+	"QB_PASSWORD",
+}
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -65,10 +75,26 @@ func main() {
 		}
 	}()
 
+	// Initialize qBittorrent client
 	qb = qbt.NewClient(cfg.QBURL)
 	err = qb.Login(cfg.QBUsername, cfg.QBPassword)
 	if err != nil {
 		l.log.Error("error during login", slog.Any("error", err))
+	}
+	if qbVersion, err := qb.WebAPIVersion(); err != nil {
+		l.log.Error("error getting qBittorrent version", slog.Any("error", err))
+	} else {
+		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
+	}
+	// Initialize Gopeed client
+	gp, err = gopeed.NewClient("http://192.168.0.44:9999")
+	if err != nil {
+		l.log.Error("error during Gopeed client initialization", slog.Any("error", err))
+	}
+	if info, err := gp.GetInfo(""); err != nil {
+		l.log.Error("error getting Gopeed info", slog.Any("error", err))
+	} else {
+		l.log.Info("Gopeed info", slog.String("version", info.Version))
 	}
 
 	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)
@@ -77,7 +103,7 @@ func main() {
 		return
 	}
 
-	bot.Debug = true
+	//bot.Debug = true
 
 	l.log.Info("Authorized on account", slog.String("account", bot.Self.UserName))
 	ctx := context.Background()
@@ -89,10 +115,9 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	go receiveUpdates(ctx, updates)
-	_, err = bufio.NewReader(os.Stdin).ReadBytes('\n')
-	if err != nil {
-		l.log.Error("Error reading from stdin", slog.Any("error", err))
-	}
+	stopCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-stopCtx.Done()
 	cancel()
 }
 func validateEnvVars(vars map[string]string) error {

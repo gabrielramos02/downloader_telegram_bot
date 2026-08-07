@@ -22,9 +22,16 @@ func TestClassifyURL(t *testing.T) {
 			wantScheme: "magnet",
 		},
 		{
-			name:    "http scheme unsupported",
-			in:      "http://example.com",
-			wantErr: "unsupported URL scheme: http",
+			name:       "http scheme supported",
+			in:         "http://example.com",
+			wantURL:    "http://example.com",
+			wantScheme: "http",
+		},
+		{
+			name:       "https scheme mapped to http",
+			in:         "https://example.com",
+			wantURL:    "https://example.com",
+			wantScheme: "http",
 		},
 		{
 			name:    "empty string has empty scheme",
