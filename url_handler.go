@@ -9,12 +9,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gabrielramos02/telegram-bot-go/internal/gopeed"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
-var cancelGoroutines = make(map[int64]context.CancelFunc)
+var cancelGoroutines = make(map[int]context.CancelFunc)
 
 func handleUrl(chatID int64, urlString string) error {
 	URL, scheme, err := classifyURL(urlString)
@@ -24,7 +25,8 @@ func handleUrl(chatID int64, urlString string) error {
 	switch scheme {
 	case "magnet":
 		return handleMagnetURL(chatID, URL)
-
+	case "http":
+		return handleHttpURL(chatID, URL)
 	default:
 		return nil
 	}
@@ -37,6 +39,8 @@ func classifyURL(urlString string) (string, string, error) {
 	switch urlObject.Scheme {
 	case "magnet":
 		return urlString, "magnet", nil
+	case "http", "https":
+		return urlString, "http", nil
 	default:
 		return "", "", fmt.Errorf("unsupported URL scheme: %s", urlObject.Scheme)
 
@@ -63,15 +67,18 @@ func handleMagnetURL(chatID int64, URL string) error {
 func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mutex := sync.Mutex{}
-	cancelGoroutines[chatID] = cancel
+	cancelGoroutines[msgSended.MessageID] = cancel
 	go func() {
 		var torrent qbt.TorrentInfo
 		var err error
 		defer func() {
 			mutex.Lock()
-			delete(cancelGoroutines, chatID)
+			delete(cancelGoroutines, msgSended.MessageID)
 			mutex.Unlock()
-			l.log.Debug("Exiting goroutine for chatID", slog.Int64("chatID", chatID))
+			l.log.Debug(
+				"End of goroutine for MessageID",
+				slog.Int("messageid", msgSended.MessageID),
+			)
 		}()
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
@@ -79,7 +86,10 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 		for isTorrentInProgress(torrent) {
 			select {
 			case <-ctx.Done():
-				l.log.Debug("Goroutine canceled for chatID", slog.Int64("chatID", chatID))
+				l.log.Debug(
+					"End of goroutine for MessageID",
+					slog.Int("messageid", msgSended.MessageID),
+				)
 				return
 			case <-ticker.C:
 				torrent, err = getTorrentInfo(hash)
@@ -169,4 +179,92 @@ func getTorrentInfo(hash string) (qbt.TorrentInfo, error) {
 	}
 	return torrentInfoList[0], nil
 
+}
+
+func handleHttpURL(chatID int64, URL string) error {
+	ddId, err := gp.CreateTask(URL)
+	if err != nil {
+		l.log.Error("Error creating direct download task", slog.Any("error", err))
+		return err
+	}
+	fmt.Println("Direct download task created with ID:", ddId)
+	ddInfo, err := gp.GetTask(ddId)
+	if err != nil {
+		l.log.Error("Error getting direct download task info", slog.Any("error", err))
+		return err
+	}
+	msg := messages.BuildDirectDownloadProgress(chatID, ddInfo)
+	msgSended, err := bot.Send(msg)
+	sendDirectDownloadInfo(chatID, ddInfo, msgSended)
+	return err
+
+}
+func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tgbotapi.Message) {
+	ctx, cancel := context.WithCancel(context.Background())
+	mutex := sync.Mutex{}
+	cancelGoroutines[msgSended.MessageID] = cancel
+	go func() {
+		var err error
+		defer func() {
+			mutex.Lock()
+			delete(cancelGoroutines, msgSended.MessageID)
+			mutex.Unlock()
+			l.log.Debug(
+				"End of goroutine for MessageID",
+				slog.Int("messageid", msgSended.MessageID),
+			)
+		}()
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for ddInfo.Status != gopeed.GopeedStatusDone && ddInfo.Status != gopeed.GopeedStatusError {
+			select {
+			case <-ctx.Done():
+				l.log.Debug(
+					"End of goroutine for MessageID",
+					slog.Int("messageid", msgSended.MessageID),
+				)
+				return
+			case <-ticker.C:
+				ddInfo, err = gp.GetTask(ddInfo.ID)
+				if err != nil {
+					l.log.Error("Error getting direct download task info", slog.Any("error", err))
+					return
+				}
+				msg := messages.BuildDirectDownloadProgress(chatID, ddInfo)
+				newMsg := tgbotapi.NewEditMessageText(chatID, msgSended.MessageID, msg.Text)
+				newMsg.ParseMode = tgbotapi.ModeHTML
+				if markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
+					newMsg.ReplyMarkup = &markup
+				}
+				_, err = bot.Send(newMsg)
+				if err != nil {
+					l.log.Error("Error sending message", slog.Any("error", err))
+				}
+
+			}
+		}
+		l.log.Debug(
+			"Direct download completed or stopped for chatID",
+			slog.Int64("chatID", chatID),
+			slog.String("ddName", ddInfo.Meta.Res.Name),
+			slog.String("ddStatus", string(ddInfo.Status)),
+		)
+		if ddInfo.Status == gopeed.GopeedStatusError {
+			l.log.Error(
+				"Direct download task ended with error",
+				slog.Int64("chatID", chatID))
+		}
+		msgText := fmt.Sprintf("✅ <b>Download Complete!</b> Your file: %s is ready.", ddInfo.Name)
+		finalMsg := tgbotapi.NewMessage(chatID, msgText)
+		finalMsg.ParseMode = tgbotapi.ModeHTML
+		_, err = bot.Send(finalMsg)
+		if err != nil {
+			l.log.Error("Error sending final message", slog.Any("error", err))
+		}
+		_, err = bot.Send(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
+		if err != nil {
+			l.log.Error("Error deleting message", slog.Any("error", err))
+		}
+	}()
 }

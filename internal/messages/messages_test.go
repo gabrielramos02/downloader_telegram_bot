@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gabrielramos02/telegram-bot-go/internal/gopeed"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/superturkey650/go-qbittorrent/qbt"
 )
@@ -154,8 +155,8 @@ func TestBuildCancelMarkup(t *testing.T) {
 	if btn.Text != "❌ Cancelar" {
 		t.Errorf("button text = %q, want %q", btn.Text, "❌ Cancelar")
 	}
-	if btn.CallbackData == nil || *btn.CallbackData != "cancel:abc123" {
-		t.Errorf("callback data = %v, want %q", btn.CallbackData, "cancel:abc123")
+	if btn.CallbackData == nil || *btn.CallbackData != "torrent:cancel:abc123" {
+		t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:cancel:abc123")
 	}
 }
 
@@ -178,8 +179,8 @@ func TestBuildInlineKeyboard(t *testing.T) {
 		if want := "🔍 Ver #1 (First Movie)"; first.Text != want {
 			t.Errorf("first button text = %q, want %q", first.Text, want)
 		}
-		if first.CallbackData == nil || *first.CallbackData != "info:aaa" {
-			t.Errorf("first callback data = %v, want %q", first.CallbackData, "info:aaa")
+		if first.CallbackData == nil || *first.CallbackData != "torrent:info:aaa" {
+			t.Errorf("first callback data = %v, want %q", first.CallbackData, "torrent:info:aaa")
 		}
 		second := markup.InlineKeyboard[1][0]
 		if want := "🔍 Ver #2 (Second Very ...)"; second.Text != want {
@@ -226,8 +227,8 @@ func TestBuildTorrentProgress(t *testing.T) {
 		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
 	}
 	btn := markup.InlineKeyboard[0][0]
-	if btn.CallbackData == nil || *btn.CallbackData != "cancel:abc" {
-		t.Errorf("callback data = %v, want %q", btn.CallbackData, "cancel:abc")
+	if btn.CallbackData == nil || *btn.CallbackData != "torrent:cancel:abc" {
+		t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:cancel:abc")
 	}
 }
 
@@ -272,7 +273,7 @@ func TestBuildTorrentInfo(t *testing.T) {
 			}
 		}
 	}
-	for _, want := range []string{"cancel:hash1", "refresh:hash1"} {
+	for _, want := range []string{"torrent:cancel:hash1", "torrent:refresh:hash1"} {
 		if !seen[want] {
 			t.Errorf("keyboard missing button %q, got %v", want, seen)
 		}
@@ -312,8 +313,8 @@ func TestBuildTorrentList(t *testing.T) {
 			t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
 		}
 		btn := markup.InlineKeyboard[0][0]
-		if btn.CallbackData == nil || *btn.CallbackData != "info:h1" {
-			t.Errorf("callback data = %v, want %q", btn.CallbackData, "info:h1")
+		if btn.CallbackData == nil || *btn.CallbackData != "torrent:info:h1" {
+			t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:info:h1")
 		}
 	})
 }
@@ -324,5 +325,372 @@ func TestFormatRow(t *testing.T) {
 		if !strings.Contains(row, want) {
 			t.Errorf("row missing %q in:\n%s", want, row)
 		}
+	}
+}
+
+func TestFormatGopeedStatus(t *testing.T) {
+	tests := []struct {
+		in   gopeed.GopeedStatus
+		want string
+	}{
+		{gopeed.GopeedStatusReady, "🟢 Ready"},
+		{gopeed.GopeedStatusRunning, "⏬ Running"},
+		{gopeed.GopeedStatusPause, "⏸️ Paused"},
+		{gopeed.GopeedStatusWait, "⏳ Waiting"},
+		{gopeed.GopeedStatusError, "❌ Error"},
+		{gopeed.GopeedStatusDone, "✅ Done"},
+		{"unknown", "unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.in), func(t *testing.T) {
+			if got := formatGopeedStatus(tt.in); got != tt.want {
+				t.Errorf("formatGopeedStatus(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildDirectDownloadKeyboard(t *testing.T) {
+	t.Run("empty list", func(t *testing.T) {
+		if markup := buildDirectDownloadKeyboard(nil); len(markup.InlineKeyboard) != 0 {
+			t.Errorf("expected no rows, got %v", markup.InlineKeyboard)
+		}
+	})
+	t.Run("one row per task", func(t *testing.T) {
+		tasks := []gopeed.GopeedTask{
+			{ID: "task1", Name: "Ubuntu ISO"},
+			{ID: "task2", Name: "Very Long Direct Download File Name"},
+		}
+		markup := buildDirectDownloadKeyboard(tasks)
+		if len(markup.InlineKeyboard) != 2 {
+			t.Fatalf("expected 2 rows, got %d", len(markup.InlineKeyboard))
+		}
+		first := markup.InlineKeyboard[0][0]
+		if want := "🗑 Eliminar Ubuntu ISO"; first.Text != want {
+			t.Errorf("first button text = %q, want %q", first.Text, want)
+		}
+		if first.CallbackData == nil || *first.CallbackData != "dd:cancel:task1" {
+			t.Errorf("first callback data = %v, want %q", first.CallbackData, "dd:cancel:task1")
+		}
+		second := markup.InlineKeyboard[1][0]
+		if want := "🗑 Eliminar Very Long Direct ..."; second.Text != want {
+			t.Errorf("second button text = %q, want %q", second.Text, want)
+		}
+	})
+}
+
+func TestBuildDirectDownloads(t *testing.T) {
+	t.Run("empty list", func(t *testing.T) {
+		msg := BuildDirectDownloads(1, nil)
+		if msg.ChatID != 1 {
+			t.Errorf("chat id = %d, want 1", msg.ChatID)
+		}
+		if msg.ParseMode != tgbotapi.ModeHTML {
+			t.Errorf("parse mode = %q, want %q", msg.ParseMode, tgbotapi.ModeHTML)
+		}
+		if !strings.Contains(msg.Text, "No direct downloads found") {
+			t.Errorf("expected empty list message, got:\n%s", msg.Text)
+		}
+		if msg.ReplyMarkup != nil {
+			t.Errorf("expected no reply markup for empty list, got %T", msg.ReplyMarkup)
+		}
+	})
+	t.Run("single task", func(t *testing.T) {
+		task := gopeed.GopeedTask{
+			ID:   "t1",
+			Name: "movie.zip",
+			Meta: gopeed.GopeedMeta{
+				Req: gopeed.GopeedRequest{URL: "https://example.com/movie.zip"},
+			},
+			Status: gopeed.GopeedStatusRunning,
+			Progress: gopeed.GopeedProgress{
+				Downloaded: 1073741824,
+				Speed:      1048576,
+			},
+			Size: 2147483648,
+		}
+		msg := BuildDirectDownloads(42, []gopeed.GopeedTask{task})
+		if msg.ChatID != 42 {
+			t.Errorf("chat id = %d, want 42", msg.ChatID)
+		}
+		if msg.ParseMode != tgbotapi.ModeHTML {
+			t.Errorf("parse mode = %q, want %q", msg.ParseMode, tgbotapi.ModeHTML)
+		}
+		for _, want := range []string{
+			"<b>⬇️ Direct Downloads</b>",
+			"<b>#1 movie.zip</b>",
+			"https://example.com/movie.zip",
+			"⏬ Running",
+			"1.0GB / 2.0GB",
+			"1.0MB/s",
+		} {
+			if !strings.Contains(msg.Text, want) {
+				t.Errorf("message missing %q in:\n%s", want, msg.Text)
+			}
+		}
+		markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+		if !ok {
+			t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
+		}
+		btn := markup.InlineKeyboard[0][0]
+		if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:t1" {
+			t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:t1")
+		}
+	})
+	t.Run("escapes html in name and url", func(t *testing.T) {
+		task := gopeed.GopeedTask{
+			ID:   "t2",
+			Name: "Ubuntu <24.04> & More",
+			Meta: gopeed.GopeedMeta{
+				Req: gopeed.GopeedRequest{URL: "https://x.com?a=1&b=2"},
+			},
+			Status: gopeed.GopeedStatusDone,
+			Size:   1,
+		}
+		msg := BuildDirectDownloads(7, []gopeed.GopeedTask{task})
+		for _, want := range []string{
+			"Ubuntu &lt;24.04&gt; &amp; More",
+			"https://x.com?a=1&amp;b=2",
+			"✅ Done",
+		} {
+			if !strings.Contains(msg.Text, want) {
+				t.Errorf("message missing %q in:\n%s", want, msg.Text)
+			}
+		}
+	})
+}
+
+func TestFormatDirectDownloadTask(t *testing.T) {
+	task := gopeed.GopeedTask{
+		ID:   "t3",
+		Name: "archive.tar.gz",
+		Meta: gopeed.GopeedMeta{
+			Req: gopeed.GopeedRequest{URL: "https://example.com/archive.tar.gz"},
+		},
+		Status: gopeed.GopeedStatusRunning,
+		Progress: gopeed.GopeedProgress{
+			Downloaded: 268435456,
+			Speed:      1048576,
+		},
+		Size: 1073741824,
+	}
+	row := formatDirectDownloadTask(3, task)
+	for _, want := range []string{
+		"<b>#3 archive.tar.gz</b>",
+		"https://example.com/archive.tar.gz",
+		"⏬ Running",
+		"256.0MB / 1.0GB",
+		"1.0MB/s",
+	} {
+		if !strings.Contains(row, want) {
+			t.Errorf("row missing %q in:\n%s", want, row)
+		}
+	}
+	t.Run("zero size avoids division by zero", func(t *testing.T) {
+		task := gopeed.GopeedTask{
+			ID:     "t4",
+			Name:   "empty",
+			Status: gopeed.GopeedStatusReady,
+		}
+		row := formatDirectDownloadTask(1, task)
+		if !strings.Contains(row, "🟢 Ready") {
+			t.Errorf("expected Ready status, got:\n%s", row)
+		}
+	})
+}
+
+func TestComputeGopeedProgress(t *testing.T) {
+	tests := []struct {
+		name string
+		task gopeed.GopeedTask
+		size int64
+		want float64
+	}{
+		{
+			name: "half done",
+			task: gopeed.GopeedTask{Size: 100, Progress: gopeed.GopeedProgress{Downloaded: 50}},
+			size: 100,
+			want: 0.5,
+		},
+		{
+			name: "completed status with zero size",
+			task: gopeed.GopeedTask{Status: gopeed.GopeedStatusDone},
+			size: 0,
+			want: 1.0,
+		},
+		{
+			name: "zero size not done",
+			task: gopeed.GopeedTask{Status: gopeed.GopeedStatusWait},
+			size: 0,
+			want: 0,
+		},
+		{
+			name: "zero downloaded",
+			task: gopeed.GopeedTask{Size: 100},
+			size: 100,
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := computeGopeedProgress(tt.task, tt.size); got != tt.want {
+				t.Errorf("computeGopeedProgress() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEffectiveTaskSize(t *testing.T) {
+	tests := []struct {
+		name string
+		task gopeed.GopeedTask
+		want int64
+	}{
+		{
+			name: "root size has priority",
+			task: gopeed.GopeedTask{Size: 100, Meta: gopeed.GopeedMeta{Res: gopeed.GopeedResource{Size: 200}}},
+			want: 100,
+		},
+		{
+			name: "fallback to resource size",
+			task: gopeed.GopeedTask{
+				Meta: gopeed.GopeedMeta{
+					Res: gopeed.GopeedResource{Size: 1597014016},
+				},
+			},
+			want: 1597014016,
+		},
+		{
+			name: "fallback to sum of files",
+			task: gopeed.GopeedTask{
+				Meta: gopeed.GopeedMeta{
+					Res: gopeed.GopeedResource{
+						Files: []gopeed.GopeedFileInfo{
+							{Size: 500},
+							{Size: 300},
+						},
+					},
+				},
+			},
+			want: 800,
+		},
+		{
+			name: "no size available",
+			task: gopeed.GopeedTask{},
+			want: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := effectiveTaskSize(tt.task); got != tt.want {
+				t.Errorf("effectiveTaskSize() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildDirectDownloadProgressUsesResourceSizeFallback(t *testing.T) {
+	task := gopeed.GopeedTask{
+		ID:       "dd-fallback",
+		Protocol: "http",
+		Name:     "archlinux.iso",
+		Status:   gopeed.GopeedStatusDone,
+		Size:     0,
+		Progress: gopeed.GopeedProgress{
+			Downloaded: 1597014016,
+		},
+		Meta: gopeed.GopeedMeta{
+			Res: gopeed.GopeedResource{Size: 1597014016},
+		},
+	}
+	msg := BuildDirectDownloadProgress(1, task)
+	for _, want := range []string{
+		"<code>[██████████]</code> 100.0%",
+		"1.5GB / 1.5GB",
+		"✅ Done",
+	} {
+		if !strings.Contains(msg.Text, want) {
+			t.Errorf("message missing %q in:\n%s", want, msg.Text)
+		}
+	}
+}
+
+func TestBuildDirectDownloadCancelMarkup(t *testing.T) {
+	markup := buildDirectDownloadCancelMarkup("task-abc")
+	if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
+		t.Fatalf("expected exactly one button row with one button, got %v", markup.InlineKeyboard)
+	}
+	btn := markup.InlineKeyboard[0][0]
+	if btn.Text != "❌ Cancelar" {
+		t.Errorf("button text = %q, want %q", btn.Text, "❌ Cancelar")
+	}
+	if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:task-abc" {
+		t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:task-abc")
+	}
+}
+
+func TestBuildDirectDownloadProgress(t *testing.T) {
+	task := gopeed.GopeedTask{
+		ID:       "dd-1",
+		Protocol: "http",
+		Name:     "Movie < Special > & Edition",
+		Status:   gopeed.GopeedStatusRunning,
+		Size:     2147483648,
+		Progress: gopeed.GopeedProgress{
+			Downloaded: 1073741824,
+			Speed:      2097152,
+		},
+		Meta: gopeed.GopeedMeta{
+			Req: gopeed.GopeedRequest{URL: "https://example.com/movie?x=1&y=2"},
+		},
+	}
+	msg := BuildDirectDownloadProgress(123, task)
+	if msg.ChatID != 123 {
+		t.Errorf("chat id = %d, want 123", msg.ChatID)
+	}
+	if msg.ParseMode != tgbotapi.ModeHTML {
+		t.Errorf("parse mode = %q, want %q", msg.ParseMode, tgbotapi.ModeHTML)
+	}
+	for _, want := range []string{
+		"<b>📌 Movie &lt; Special &gt; &amp; Edition</b>",
+		"<b>Status:</b> ⏬ Running",
+		"<code>[█████░░░░░]</code> 50.0%",
+		"1.0GB / 2.0GB",
+		"⬇️ <code>2.0MB/s</code>",
+		"<b>Protocol:</b> <code>http</code>",
+		"https://example.com/movie?x=1&amp;y=2",
+	} {
+		if !strings.Contains(msg.Text, want) {
+			t.Errorf("message missing %q in:\n%s", want, msg.Text)
+		}
+	}
+	markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+	if !ok {
+		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
+	}
+	btn := markup.InlineKeyboard[0][0]
+	if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:dd-1" {
+		t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:dd-1")
+	}
+}
+
+func TestBuildDirectDownloadProgressNoUrl(t *testing.T) {
+	task := gopeed.GopeedTask{
+		ID:       "dd-2",
+		Protocol: "https",
+		Name:     "Doc",
+		Status:   gopeed.GopeedStatusDone,
+		Size:     1048576,
+		Progress: gopeed.GopeedProgress{
+			Downloaded: 1048576,
+			Speed:      0,
+		},
+	}
+	msg := BuildDirectDownloadProgress(7, task)
+	if !strings.Contains(msg.Text, "✅ Done") {
+		t.Errorf("expected Done status, got:\n%s", msg.Text)
+	}
+	if strings.Contains(msg.Text, "<b>URL:</b>") {
+		t.Errorf("should not contain URL label when URL is missing, got:\n%s", msg.Text)
 	}
 }

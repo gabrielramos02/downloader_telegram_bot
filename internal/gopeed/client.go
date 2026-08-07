@@ -43,7 +43,7 @@ func (c *GopeedClient) GetInfo(path string) (GopeedInfo, error) {
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
-		return resp.Data, fmt.Errorf("failed to decode response: %v", err)
+		return resp.Data, fmt.Errorf("failed to decode response from GetInf from GetInfoo: %v", err)
 	}
 	if resp.Code != 0 {
 		return resp.Data, fmt.Errorf("error from server: %s", resp.Msg)
@@ -61,7 +61,7 @@ func (c *GopeedClient) GetTasks() ([]GopeedTask, error) {
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
-		return resp.Data, fmt.Errorf("failed to decode response: %v", err)
+		return resp.Data, fmt.Errorf("failed to decode response from getTasks: %v", err)
 	}
 	if resp.Code != 0 {
 		return resp.Data, fmt.Errorf("error from server: %s", resp.Msg)
@@ -71,19 +71,21 @@ func (c *GopeedClient) GetTasks() ([]GopeedTask, error) {
 
 func (c *GopeedClient) GetTask(taskID string) (GopeedTask, error) {
 	var resp GopeedResponse[GopeedTask]
-	req, _ := http.NewRequest("GET", c.baseURL+taskEndpoint+"%7B"+taskID+"%7D", nil)
+	req, _ := http.NewRequest("GET", c.baseURL+taskEndpoint+"/"+taskID, nil)
 	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return resp.Data, fmt.Errorf("failed to get taks: %v", err)
 	}
+	fmt.Println("Response Status:", res.Status)
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
-		return resp.Data, fmt.Errorf("failed to decode response: %v", err)
+		return resp.Data, fmt.Errorf("failed to decode response from GetTask: %v", err)
 	}
 	if resp.Code != 0 {
 		return resp.Data, fmt.Errorf("error from server: %s", resp.Msg)
 	}
+	fmt.Println("Response Data:", resp.Data)
 	return resp.Data, nil
 }
 func (c *GopeedClient) CreateTask(url string) (taskid string, err error) {
@@ -111,7 +113,7 @@ func (c *GopeedClient) CreateTask(url string) (taskid string, err error) {
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
-		return "", fmt.Errorf("failed to decode response: %v", err)
+		return "", fmt.Errorf("failed to decode response from createTask: %v", err)
 	}
 	if resp.Code != 0 {
 		return resp.Data, fmt.Errorf("error from server: %s", resp.Msg)
@@ -133,15 +135,16 @@ func (c *GopeedClient) resolve(url string) (resolvedID string, err error) {
 	}
 	reader := bytes.NewReader(jsonData)
 
-	req, _ := http.NewRequest("GET", c.baseURL+resolveEndpoint, reader)
+	req, _ := http.NewRequest("POST", c.baseURL+resolveEndpoint, reader)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return resp.Data.Id, fmt.Errorf("failed to resolve resource: %v", err)
 	}
 	defer res.Body.Close()
+
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
-		return resp.Data.Id, fmt.Errorf("failed to decode response: %v", err)
+		return resp.Data.Id, fmt.Errorf("failed to decode response from resolve: %v", err)
 	}
 	if resp.Code != 0 {
 		return "", fmt.Errorf("error from server: %s", resp.Msg)
@@ -151,11 +154,14 @@ func (c *GopeedClient) resolve(url string) (resolvedID string, err error) {
 
 func (c *GopeedClient) DeleteTask(taskID string) error {
 	var resp GopeedResponse[struct{}]
-	req, _ := http.NewRequest("DELETE", c.baseURL+taskEndpoint+"%7B"+taskID+"%7D", nil)
+	params := url.Values{}
+	params.Add("force", "true")
+	req, _ := http.NewRequest("DELETE", c.baseURL+taskEndpoint+"/"+taskID+"?"+params.Encode(), nil)
 	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %v", err)
 	}
+	fmt.Println("Response Status:", res.Status)
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
