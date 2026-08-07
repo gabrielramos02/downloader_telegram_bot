@@ -46,8 +46,8 @@ func BuildTorrentInfo(chatID int64, torrent qbt.TorrentInfo) tgbotapi.MessageCon
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("❌ Cancel", "cancel:"+torrent.Hash),
-			tgbotapi.NewInlineKeyboardButtonData("🔄 Refresh", "refresh:"+torrent.Hash),
+			tgbotapi.NewInlineKeyboardButtonData("❌ Cancel", "torrent:cancel:"+torrent.Hash),
+			tgbotapi.NewInlineKeyboardButtonData("🔄 Refresh", "torrent:refresh:"+torrent.Hash),
 		),
 	)
 	msg := tgbotapi.NewMessage(chatID, msgText)

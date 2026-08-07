@@ -8,46 +8,64 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+type CallbackAction string
+
+const (
+	ActionCancel  CallbackAction = "cancel"
+	ActionInfo    CallbackAction = "info"
+	ActionRefresh CallbackAction = "refresh"
+)
+
+type CallbackScope string
+
+const (
+	ScopeTorrent CallbackScope = "torrent"
+	ScopeDD      CallbackScope = "dd"
+)
+
+var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.CallbackQuery, id string) error{
+	ScopeTorrent: {
+		ActionCancel:  handleTorrentCancel,
+		ActionInfo:    handleTorrentInfo,
+		ActionRefresh: handleRefreshTorrentInfo,
+	},
+	ScopeDD: {
+		ActionCancel: handleDirectDownloadCancel,
+	},
+}
+
 func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
-	action, hash, ok := parseCallbackData(query.Data)
+	scope, action, id, ok := parseCallbackData(query.Data)
 	if !ok {
 		return
 	}
-	switch action {
-	case "cancel":
-		err := handleTorrentCancel(query.Message, hash)
-		if err != nil {
-			l.log.Error("Error canceling torrent", slog.Any("error", err))
-		}
-	case "info":
-		err := handleTorrentInfo(query.From.ID, hash)
-		if err != nil {
-			l.log.Error("Error getting torrent info", slog.Any("error", err))
-		}
-	case "refresh":
-		err := handleRefreshTorrentInfo(query, hash)
-		if err != nil {
-			l.log.Error("Error refreshing torrent info", slog.Any("error", err))
-		}
-
+	handler, exist := handlers[scope][action]
+	l.log.Debug("Handling callback query", slog.String("scope", string(scope)), slog.String("action", string(action)), slog.String("id", id), slog.Bool("handler_exists", exist))
+	if !exist {
+		return
+	}
+	err := handler(query, id)
+	if err != nil {
+		l.log.Error("Error handling data")
 	}
 }
-func parseCallbackData(data string) (action string, hash string, ok bool) {
-	for _, action := range []string{"cancel", "info", "refresh"} {
-		if hash, exists := strings.CutPrefix(data, action+":"); exists {
-			return action, hash, true
-		}
+
+func parseCallbackData(
+	data string,
+) (scope CallbackScope, action CallbackAction, id string, ok bool) {
+	parts := strings.SplitN(data, ":", 3)
+	if len(parts) != 3 {
+		return
 	}
-	return "", "", false
-
+	return CallbackScope(parts[0]), CallbackAction(parts[1]), parts[2], true
 }
-
-func handleTorrentCancel(message *tgbotapi.Message, hash string) error {
-	err := qb.Delete([]string{hash}, true)
+func handleTorrentCancel(query *tgbotapi.CallbackQuery, id string) error {
+	message := query.Message
+	err := qb.Delete([]string{id}, true)
 	if err != nil {
 		return err
 	}
-	if cancel, exists := cancelGoroutines[message.Chat.ID]; exists && cancel != nil {
+	if cancel, exists := cancelGoroutines[message.MessageID]; exists && cancel != nil {
 		cancel()
 	}
 	_, err = bot.Send(
@@ -64,8 +82,9 @@ func handleTorrentCancel(message *tgbotapi.Message, hash string) error {
 	return nil
 }
 
-func handleTorrentInfo(chatID int64, hash string) error {
-	torrent, err := getTorrentInfo(hash)
+func handleTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
+	chatID := query.Message.Chat.ID
+	torrent, err := getTorrentInfo(id)
 	if err != nil {
 		return err
 	}
@@ -74,12 +93,11 @@ func handleTorrentInfo(chatID int64, hash string) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, hash string) error {
-	torrent, err := getTorrentInfo(hash)
+func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
+	torrent, err := getTorrentInfo(id)
 	if err != nil {
 		return err
 	}
@@ -100,4 +118,20 @@ func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, hash string) error 
 	}
 	return nil
 
+}
+func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error {
+	err := gp.DeleteTask(id)
+	if err != nil {
+		return err
+	}
+	if cancel, exists := cancelGoroutines[query.Message.MessageID]; exists && cancel != nil {
+		cancel()
+	}
+	_, err = bot.Send(
+		tgbotapi.NewEditMessageText(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			"Direct download canceled successfully.",
+		))
+	return err
 }

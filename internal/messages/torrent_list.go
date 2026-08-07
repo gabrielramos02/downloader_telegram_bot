@@ -115,7 +115,7 @@ func buildInlineKeyboard(torrentList []qbt.TorrentInfo) tgbotapi.InlineKeyboardM
 	var buttons [][]tgbotapi.InlineKeyboardButton
 	for i, t := range torrentList {
 		btnTxt := fmt.Sprintf("🔍 Ver #%d (%s)", i+1, truncateFilename(t.Name, 15))
-		btn := tgbotapi.NewInlineKeyboardButtonData(btnTxt, fmt.Sprintf("info:%s", t.Hash))
+		btn := tgbotapi.NewInlineKeyboardButtonData(btnTxt, fmt.Sprintf("torrent:info:%s", t.Hash))
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(btn))
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(buttons...)

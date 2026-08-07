@@ -103,7 +103,7 @@ func main() {
 		return
 	}
 
-	bot.Debug = true
+	//bot.Debug = true
 
 	l.log.Info("Authorized on account", slog.String("account", bot.Self.UserName))
 	ctx := context.Background()

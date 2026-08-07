@@ -55,9 +55,11 @@ type GopeedResource struct {
 }
 
 type GopeedFileInfo struct {
-	Name string `json:"name"`
-	Path string `json:"path"`
-	Size int64  `json:"size"`
+	Name  string         `json:"name"`
+	Path  string         `json:"path"`
+	Size  int64          `json:"size"`
+	Ctime time.Time      `json:"ctime"`
+	Req   *GopeedRequest `json:"req,omitempty"`
 }
 
 type GopeedRequest struct {
@@ -78,8 +80,8 @@ type GopeedProgress struct {
 }
 
 type GopeedResolved struct {
-	Id        string           `json:"id"`
-	Resources []GopeedResource `json:"res"`
+	Id       string         `json:"id"`
+	Resource GopeedResource `json:"res"`
 }
 
 ////\
@@ -89,7 +91,7 @@ type GopeedResolve struct {
 	Opts GopeedOptions `json:"opts"`
 }
 type GopeedCreateTask struct {
-	Rid  string `json:"rid"`
+	Rid  string        `json:"rid"`
 	Opts GopeedOptions `json:"opts"`
 }
 type GopeedExtraOptions struct {

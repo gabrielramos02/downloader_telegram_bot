@@ -55,7 +55,7 @@ func buildProgressBar(progress float64) string {
 }
 
 func buildCancelMarkup(hash string) tgbotapi.InlineKeyboardMarkup {
-	data := fmt.Sprintf("cancel:%s", hash)
+	data := fmt.Sprintf("torrent:cancel:%s", hash)
 	cancelMarkup := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("❌ Cancelar", data),
