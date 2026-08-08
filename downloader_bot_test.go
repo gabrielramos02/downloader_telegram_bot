@@ -35,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		"QB_URL":      "http://qb:8080",
 		"QB_USERNAME": "admin",
 		"QB_PASSWORD": "secret",
+		"GP_URL":      "http://gopeed:9999",
 	}
 	t.Run("all env vars set", func(t *testing.T) {
 		cfg, err := loadConfig(fullEnv)
@@ -47,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			QBURL:      "http://qb:8080",
 			QBUsername: "admin",
 			QBPassword: "secret",
+			GPURL:      "http://gopeed:9999",
 		}
 		if cfg != want {
 			t.Errorf("loadConfig = %+v, want %+v", cfg, want)
@@ -66,12 +68,42 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("expected error mentioning QB_PASSWORD, got %v", err)
 		}
 	})
+	t.Run("missing GP_URL", func(t *testing.T) {
+		env := maps.Clone(fullEnv)
+		delete(env, "GP_URL")
+		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_URL") {
+			t.Errorf("expected error mentioning GP_URL, got %v", err)
+		}
+	})
 	t.Run("empty env reports first missing", func(t *testing.T) {
 		if _, err := loadConfig(
 			map[string]string{},
 		); err == nil ||
 			!strings.Contains(err.Error(), "BOT_TOKEN") {
 			t.Errorf("expected error mentioning BOT_TOKEN, got %v", err)
+		}
+	})
+}
+
+func TestValidateEnvVars(t *testing.T) {
+	fullEnv := map[string]string{
+		"BOT_TOKEN":   "tok",
+		"ENV":         "prod",
+		"QB_URL":      "http://qb:8080",
+		"QB_USERNAME": "admin",
+		"QB_PASSWORD": "secret",
+		"GP_URL":      "http://gopeed:9999",
+	}
+	t.Run("all set", func(t *testing.T) {
+		if err := validateEnvVars(fullEnv); err != nil {
+			t.Errorf("validateEnvVars unexpected error: %v", err)
+		}
+	})
+	t.Run("missing one", func(t *testing.T) {
+		env := maps.Clone(fullEnv)
+		delete(env, "QB_USERNAME")
+		if err := validateEnvVars(env); err == nil || !strings.Contains(err.Error(), "QB_USERNAME") {
+			t.Errorf("expected error mentioning QB_USERNAME, got %v", err)
 		}
 	})
 }
