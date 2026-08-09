@@ -153,7 +153,7 @@ func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
 	}
 	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
 	_, err = bot.Send(msg)
-	return nil
+	return err
 }
 
 func handleDirectDownloadRefresh(query *tgbotapi.CallbackQuery, id string) error {
