@@ -30,8 +30,8 @@ var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.Callbac
 		ActionRefresh: handleRefreshTorrentInfo,
 	},
 	ScopeDD: {
-		ActionCancel: handleDirectDownloadCancel,
-		ActionInfo:   handleDirectDownloadInfo,
+		ActionCancel:  handleDirectDownloadCancel,
+		ActionInfo:    handleDirectDownloadInfo,
 		ActionRefresh: handleDirectDownloadRefresh,
 	},
 }
