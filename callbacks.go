@@ -31,6 +31,8 @@ var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.Callbac
 	},
 	ScopeDD: {
 		ActionCancel: handleDirectDownloadCancel,
+		ActionInfo:   handleDirectDownloadInfo,
+		ActionRefresh: handleDirectDownloadRefresh,
 	},
 }
 
@@ -40,7 +42,13 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 		return
 	}
 	handler, exist := handlers[scope][action]
-	l.log.Debug("Handling callback query", slog.String("scope", string(scope)), slog.String("action", string(action)), slog.String("id", id), slog.Bool("handler_exists", exist))
+	l.log.Debug(
+		"Handling callback query",
+		slog.String("scope", string(scope)),
+		slog.String("action", string(action)),
+		slog.String("id", id),
+		slog.Bool("handler_exists", exist),
+	)
 	if !exist {
 		return
 	}
@@ -120,6 +128,7 @@ func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
 
 }
 func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error {
+	l.log.Debug("Handling direct download cancel", slog.String("id", id))
 	err := gp.DeleteTask(id)
 	if err != nil {
 		return err
@@ -133,5 +142,37 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 			query.Message.MessageID,
 			"Direct download canceled successfully.",
 		))
+	return err
+}
+
+func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
+	l.log.Debug("Handling direct download info", slog.String("id", id))
+	task, err := gp.GetTask(id)
+	if err != nil {
+		return err
+	}
+	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	_, err = bot.Send(msg)
+	return nil
+}
+
+func handleDirectDownloadRefresh(query *tgbotapi.CallbackQuery, id string) error {
+	task, err := gp.GetTask(id)
+	if err != nil {
+		return err
+	}
+	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	var newMsg tgbotapi.EditMessageTextConfig
+
+	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
+		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			msg.Text,
+			replyMarkup,
+		)
+		newMsg.ParseMode = tgbotapi.ModeHTML
+	}
+	_, err = bot.Send(newMsg)
 	return err
 }

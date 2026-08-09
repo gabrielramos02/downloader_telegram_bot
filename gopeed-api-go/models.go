@@ -84,7 +84,6 @@ type GopeedResolved struct {
 	Resource GopeedResource `json:"res"`
 }
 
-////\
 
 type GopeedResolve struct {
 	Req  GopeedRequest `json:"req"`

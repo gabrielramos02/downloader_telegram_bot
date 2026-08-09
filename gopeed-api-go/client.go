@@ -76,7 +76,6 @@ func (c *GopeedClient) GetTask(taskID string) (GopeedTask, error) {
 	if err != nil {
 		return resp.Data, fmt.Errorf("failed to get taks: %v", err)
 	}
-	fmt.Println("Response Status:", res.Status)
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
@@ -85,7 +84,6 @@ func (c *GopeedClient) GetTask(taskID string) (GopeedTask, error) {
 	if resp.Code != 0 {
 		return resp.Data, fmt.Errorf("error from server: %s", resp.Msg)
 	}
-	fmt.Println("Response Data:", resp.Data)
 	return resp.Data, nil
 }
 func (c *GopeedClient) CreateTask(url string) (taskid string, err error) {
@@ -161,7 +159,6 @@ func (c *GopeedClient) DeleteTask(taskID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete task: %v", err)
 	}
-	fmt.Println("Response Status:", res.Status)
 	defer res.Body.Close()
 	err = json.NewDecoder(res.Body).Decode(&resp)
 	if err != nil {
