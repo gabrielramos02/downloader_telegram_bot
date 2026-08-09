@@ -356,7 +356,7 @@ func TestBuildDirectDownloadKeyboard(t *testing.T) {
 			t.Errorf("expected no rows, got %v", markup.InlineKeyboard)
 		}
 	})
-	t.Run("one row per task", func(t *testing.T) {
+	t.Run("two buttons per task", func(t *testing.T) {
 		tasks := []gopeed.GopeedTask{
 			{ID: "task1", Name: "Ubuntu ISO"},
 			{ID: "task2", Name: "Very Long Direct Download File Name"},
@@ -365,16 +365,26 @@ func TestBuildDirectDownloadKeyboard(t *testing.T) {
 		if len(markup.InlineKeyboard) != 2 {
 			t.Fatalf("expected 2 rows, got %d", len(markup.InlineKeyboard))
 		}
-		first := markup.InlineKeyboard[0][0]
-		if want := "🗑 Eliminar Ubuntu ISO"; first.Text != want {
-			t.Errorf("first button text = %q, want %q", first.Text, want)
+		if len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected 2 buttons in first row, got %d", len(markup.InlineKeyboard[0]))
 		}
-		if first.CallbackData == nil || *first.CallbackData != "dd:cancel:task1" {
-			t.Errorf("first callback data = %v, want %q", first.CallbackData, "dd:cancel:task1")
+		infoBtn := markup.InlineKeyboard[0][0]
+		if want := "ℹ️ Info"; infoBtn.Text != want {
+			t.Errorf("info button text = %q, want %q", infoBtn.Text, want)
 		}
-		second := markup.InlineKeyboard[1][0]
-		if want := "🗑 Eliminar Very Long Direct ..."; second.Text != want {
-			t.Errorf("second button text = %q, want %q", second.Text, want)
+		if infoBtn.CallbackData == nil || *infoBtn.CallbackData != "dd:info:task1" {
+			t.Errorf("info callback data = %v, want %q", infoBtn.CallbackData, "dd:info:task1")
+		}
+		deleteBtn := markup.InlineKeyboard[0][1]
+		if want := "🗑 Eliminar Ubuntu ISO"; deleteBtn.Text != want {
+			t.Errorf("delete button text = %q, want %q", deleteBtn.Text, want)
+		}
+		if deleteBtn.CallbackData == nil || *deleteBtn.CallbackData != "dd:cancel:task1" {
+			t.Errorf("delete callback data = %v, want %q", deleteBtn.CallbackData, "dd:cancel:task1")
+		}
+		secondDelete := markup.InlineKeyboard[1][1]
+		if want := "🗑 Eliminar Very Long Direct ..."; secondDelete.Text != want {
+			t.Errorf("second delete button text = %q, want %q", secondDelete.Text, want)
 		}
 	})
 }
@@ -432,9 +442,16 @@ func TestBuildDirectDownloads(t *testing.T) {
 		if !ok {
 			t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
 		}
-		btn := markup.InlineKeyboard[0][0]
-		if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:t1" {
-			t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:t1")
+		if len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected 2 buttons in first row, got %d", len(markup.InlineKeyboard[0]))
+		}
+		infoBtn := markup.InlineKeyboard[0][0]
+		if infoBtn.CallbackData == nil || *infoBtn.CallbackData != "dd:info:t1" {
+			t.Errorf("info callback data = %v, want %q", infoBtn.CallbackData, "dd:info:t1")
+		}
+		deleteBtn := markup.InlineKeyboard[0][1]
+		if deleteBtn.CallbackData == nil || *deleteBtn.CallbackData != "dd:cancel:t1" {
+			t.Errorf("delete callback data = %v, want %q", deleteBtn.CallbackData, "dd:cancel:t1")
 		}
 	})
 	t.Run("escapes html in name and url", func(t *testing.T) {

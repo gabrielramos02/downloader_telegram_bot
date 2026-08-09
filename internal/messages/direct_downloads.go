@@ -82,11 +82,15 @@ func formatGopeedStatus(status gopeed.GopeedStatus) string {
 func buildDirectDownloadKeyboard(taskList []gopeed.GopeedTask) tgbotapi.InlineKeyboardMarkup {
 	var buttons [][]tgbotapi.InlineKeyboardButton
 	for _, task := range taskList {
-		btn := tgbotapi.NewInlineKeyboardButtonData(
+		infoBtn := tgbotapi.NewInlineKeyboardButtonData(
+			"ℹ️ Info",
+			fmt.Sprintf("dd:info:%s", task.ID),
+		)
+		deleteBtn := tgbotapi.NewInlineKeyboardButtonData(
 			fmt.Sprintf("🗑 Eliminar %s", truncateFilename(task.Name, 20)),
 			fmt.Sprintf("dd:cancel:%s", task.ID),
 		)
-		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(btn))
+		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(infoBtn, deleteBtn))
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(buttons...)
 }
