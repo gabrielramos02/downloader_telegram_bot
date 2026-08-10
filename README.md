@@ -6,6 +6,10 @@
 
 A Telegram bot that lets you control your download managers from anywhere. Manage **qBittorrent** torrents and **Gopeed** direct downloads through simple chat messages and inline buttons.
 
+## Motivation
+
+I run my downloads on a home server but I want to control them from my phone without opening the Web UI of each download manager. This bot centralizes qBittorrent and Gopeed into a single Telegram chat, with live progress updates and one-tap actions. It was also a good excuse to extract the Gopeed client into its own reusable Go library: [gopeed-api-go](https://github.com/gabrielramos02/gopeed-api-go).
+
 ## Features
 
 - Add torrents by sending a magnet link.
@@ -15,6 +19,26 @@ A Telegram bot that lets you control your download managers from anywhere. Manag
 - Cancel, refresh, or get more info through inline keyboards.
 - Live progress updates every 5 seconds while a download is active.
 - Structured logging with `slog` and optional file rotation.
+
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/gabrielramos02/telegram-bot-go.git
+cd telegram-bot-go
+
+# Download dependencies
+go mod download
+
+# Create and edit your .env file
+cp .env .env.local
+# Edit .env.local with your credentials
+
+# Run the bot
+go run .
+```
+
+> Note: if you don't have an `.env` file yet, create one from the example in the [Configuration](#configuration) section.
 
 ## Powered by [gopeed-api-go](https://github.com/gabrielramos02/gopeed-api-go)
 
@@ -104,24 +128,6 @@ ENV=development
 LOG_FILE=bot.log
 ```
 
-## Installation & Run
-
-```bash
-# Clone the repository
-git clone https://github.com/gabrielramos02/telegram-bot-go.git
-cd telegram-bot-go
-
-# Download dependencies
-go mod download
-
-# Create your .env file
-cp .env.example .env
-# Edit .env with your credentials
-
-# Run the bot
-go run .
-```
-
 ## Usage
 
 Send commands or links to your bot:
@@ -138,6 +144,14 @@ When a download starts, the bot sends a progress card with an inline keyboard so
 - **Cancel** or **Delete** a download.
 - **Info** to open a detailed view.
 
+### Example messages
+
+```text
+/get_torrents
+magnet:?xt=urn:btih:...
+https://example.com/file.iso
+```
+
 ## Development & Testing
 
 ```bash
@@ -147,6 +161,16 @@ go test ./...
 # Build the binary
 go build -o telegram-bot-go .
 ```
+
+## Contributing
+
+Contributions are welcome. If you find a bug or want to add a feature:
+
+1. Fork the repository.
+2. Create a new branch for your change.
+3. Make your changes and add tests when possible.
+4. Run `go test ./...` to make sure everything passes.
+5. Open a pull request with a clear description.
 
 ## License
 
