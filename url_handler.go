@@ -186,6 +186,10 @@ func handleHttpURL(chatID int64, URL string) error {
 		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
 	}
 	resolved, err := gp.Resolve(URL, opts)
+	if err != nil {
+		l.log.Error("Error creating direct download task", slog.Any("error", err))
+		return err
+	}
 	ddId, err := getDirectDownloadInfo(resolved.Id)
 	if err != nil {
 		l.log.Error("Error creating direct download task", slog.Any("error", err))
@@ -208,7 +212,7 @@ func getDirectDownloadInfo(resolvedID string) (taskID string, err error) {
 	}
 	taskID, err = gp.CreateTask(resolvedID, opts)
 	if err != nil {
-		return
+		return "", err
 	}
 	return taskID, nil
 }
