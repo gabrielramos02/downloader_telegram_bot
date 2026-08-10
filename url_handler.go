@@ -185,18 +185,14 @@ func handleHttpURL(chatID int64, URL string) error {
 	opts := gopeed.GopeedOptions{
 		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
 	}
-	resolved, err := gp.Resolve(URL, opts)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	ddId, err := gp.CreateTaskFromURL(ctx, URL, opts)
 	if err != nil {
-		l.log.Error("Error creating direct download task", slog.Any("error", err))
-		return err
+		return fmt.Errorf("failed to create direct download task: %v", err)
 	}
-	ddId, err := getDirectDownloadInfo(resolved.Id)
-	if err != nil {
-		l.log.Error("Error creating direct download task", slog.Any("error", err))
-		return err
-	}
-	fmt.Println("Direct download task created with ID:", ddId)
-	ddInfo, err := gp.GetTask(ddId)
+	l.log.Debug("Direct download task created with ID:", slog.String("ddId", ddId))
+	ddInfo, err := gp.GetTask(ctx, ddId)
 	if err != nil {
 		l.log.Error("Error getting direct download task info", slog.Any("error", err))
 		return err
@@ -205,16 +201,6 @@ func handleHttpURL(chatID int64, URL string) error {
 	msgSended, err := bot.Send(msg)
 	sendDirectDownloadInfo(chatID, ddInfo, msgSended)
 	return err
-}
-func getDirectDownloadInfo(resolvedID string) (taskID string, err error) {
-	opts := gopeed.GopeedOptions{
-		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
-	}
-	taskID, err = gp.CreateTask(resolvedID, opts)
-	if err != nil {
-		return "", err
-	}
-	return taskID, nil
 }
 func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -243,7 +229,9 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 				)
 				return
 			case <-ticker.C:
-				ddInfo, err = gp.GetTask(ddInfo.ID)
+				contextInfo, cancelInfo := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancelInfo()
+				ddInfo, err = gp.GetTask(contextInfo, ddInfo.ID)
 				if err != nil {
 					l.log.Error("Error getting direct download task info", slog.Any("error", err))
 					return

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log/slog"
+	"time"
 
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -82,7 +84,9 @@ func getTorrents(chatID int64) error {
 	return nil
 }
 func getDirectDownloads(chatID int64) error {
-	tasks, err := gp.GetTasks()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	tasks, err := gp.GetTasks(ctx)
 	if err != nil {
 		return err
 	}
