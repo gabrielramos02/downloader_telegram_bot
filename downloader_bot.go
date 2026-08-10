@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -91,11 +92,13 @@ func main() {
 		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
 	}
 	// Initialize Gopeed client
-	gp, err = gopeed.NewClient(cfg.GPURL, cfg.GPToken)
+	gp, err = gopeed.NewClient(cfg.GPURL, gopeed.WithAPIToken(cfg.GPToken))
 	if err != nil {
 		l.log.Error("error during Gopeed client initialization", slog.Any("error", err))
 	}
-	if info, err := gp.GetInfo(""); err != nil {
+	ctxInfo, cancelInfo := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelInfo()
+	if info, err := gp.GetInfo(ctxInfo); err != nil {
 		l.log.Error("error getting Gopeed info", slog.Any("error", err))
 	} else {
 		l.log.Info("Gopeed info", slog.String("version", info.Version))

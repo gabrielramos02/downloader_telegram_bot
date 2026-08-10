@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -129,7 +131,9 @@ func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
 }
 func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error {
 	l.log.Debug("Handling direct download cancel", slog.String("id", id))
-	err := gp.DeleteTask(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	err := gp.DeleteTask(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -147,7 +151,9 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 
 func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
 	l.log.Debug("Handling direct download info", slog.String("id", id))
-	task, err := gp.GetTask(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	task, err := gp.GetTask(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -157,7 +163,9 @@ func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
 }
 
 func handleDirectDownloadRefresh(query *tgbotapi.CallbackQuery, id string) error {
-	task, err := gp.GetTask(id)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	task, err := gp.GetTask(ctx, id)
 	if err != nil {
 		return err
 	}
