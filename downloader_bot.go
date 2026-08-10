@@ -27,6 +27,7 @@ var requiredEnvVars = []string{
 	"QB_USERNAME",
 	"QB_PASSWORD",
 	"GP_URL",
+	"GP_TOKEN",
 }
 
 type loggerClient struct {
@@ -55,6 +56,7 @@ func main() {
 		"QB_USERNAME": os.Getenv("QB_USERNAME"),
 		"QB_PASSWORD": os.Getenv("QB_PASSWORD"),
 		"GP_URL":      os.Getenv("GP_URL"),
+		"GP_TOKEN":    os.Getenv("GP_TOKEN"),
 	})
 	if err != nil {
 		log.Panic(err.Error())
@@ -89,7 +91,7 @@ func main() {
 		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
 	}
 	// Initialize Gopeed client
-	gp, err = gopeed.NewClient(cfg.GPURL)
+	gp, err = gopeed.NewClient(cfg.GPURL, cfg.GPToken)
 	if err != nil {
 		l.log.Error("error during Gopeed client initialization", slog.Any("error", err))
 	}
@@ -138,6 +140,7 @@ type config struct {
 	QBUsername string
 	QBPassword string
 	GPURL      string
+	GPToken    string
 }
 
 func loadConfig(vars map[string]string) (config, error) {
@@ -151,6 +154,7 @@ func loadConfig(vars map[string]string) (config, error) {
 		QBUsername: vars["QB_USERNAME"],
 		QBPassword: vars["QB_PASSWORD"],
 		GPURL:      vars["GP_URL"],
+		GPToken:    vars["GP_TOKEN"],
 	}, nil
 }
 

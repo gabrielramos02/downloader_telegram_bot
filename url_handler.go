@@ -182,7 +182,10 @@ func getTorrentInfo(hash string) (qbt.TorrentInfo, error) {
 }
 
 func handleHttpURL(chatID int64, URL string) error {
-	ddId, err := gp.CreateTask(URL)
+	opts := gopeed.GopeedOptions{
+		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
+	}
+	ddId, err := gp.CreateTask(URL, opts)
 	if err != nil {
 		l.log.Error("Error creating direct download task", slog.Any("error", err))
 		return err
