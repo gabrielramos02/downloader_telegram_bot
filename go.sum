@@ -1,6 +1,6 @@
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gabrielramos02/gopeed-api-go v0.0.0-20260810100815-bd0ab7d0bca1 h1:svpo5iB53qZ+nmHWHmcAJcO+S64rJKtkhoOZn+7CofA=
-github.com/gabrielramos02/gopeed-api-go v0.0.0-20260810100815-bd0ab7d0bca1/go.mod h1:J4ArM5kDQlPR7zHKUvD614Nfo/CSP/EvllpH/NSsLUY=
+github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260810150108-32be4c9beb46 h1:ECRXnQN95Uv+bWn9bttCNOykaKKZVPgYjVWXDfx51xo=
+github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260810150108-32be4c9beb46/go.mod h1:J4ArM5kDQlPR7zHKUvD614Nfo/CSP/EvllpH/NSsLUY=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
