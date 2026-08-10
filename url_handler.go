@@ -185,7 +185,8 @@ func handleHttpURL(chatID int64, URL string) error {
 	opts := gopeed.GopeedOptions{
 		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
 	}
-	ddId, err := gp.CreateTask(URL, opts)
+	resolved, err := gp.Resolve(URL, opts)
+	ddId, err := getDirectDownloadInfo(resolved.Id)
 	if err != nil {
 		l.log.Error("Error creating direct download task", slog.Any("error", err))
 		return err
@@ -200,7 +201,16 @@ func handleHttpURL(chatID int64, URL string) error {
 	msgSended, err := bot.Send(msg)
 	sendDirectDownloadInfo(chatID, ddInfo, msgSended)
 	return err
-
+}
+func getDirectDownloadInfo(resolvedID string) (taskID string, err error) {
+	opts := gopeed.GopeedOptions{
+		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
+	}
+	taskID, err = gp.CreateTask(resolvedID, opts)
+	if err != nil {
+		return
+	}
+	return taskID, nil
 }
 func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
