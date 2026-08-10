@@ -36,6 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		"QB_USERNAME": "admin",
 		"QB_PASSWORD": "secret",
 		"GP_URL":      "http://gopeed:9999",
+		"GP_TOKEN":    "gopeed-secret",
 	}
 	t.Run("all env vars set", func(t *testing.T) {
 		cfg, err := loadConfig(fullEnv)
@@ -49,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			QBUsername: "admin",
 			QBPassword: "secret",
 			GPURL:      "http://gopeed:9999",
+			GPToken:    "gopeed-secret",
 		}
 		if cfg != want {
 			t.Errorf("loadConfig = %+v, want %+v", cfg, want)
@@ -75,6 +77,13 @@ func TestLoadConfig(t *testing.T) {
 			t.Errorf("expected error mentioning GP_URL, got %v", err)
 		}
 	})
+	t.Run("missing GP_TOKEN", func(t *testing.T) {
+		env := maps.Clone(fullEnv)
+		delete(env, "GP_TOKEN")
+		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_TOKEN") {
+			t.Errorf("expected error mentioning GP_TOKEN, got %v", err)
+		}
+	})
 	t.Run("empty env reports first missing", func(t *testing.T) {
 		if _, err := loadConfig(
 			map[string]string{},
@@ -93,17 +102,25 @@ func TestValidateEnvVars(t *testing.T) {
 		"QB_USERNAME": "admin",
 		"QB_PASSWORD": "secret",
 		"GP_URL":      "http://gopeed:9999",
+		"GP_TOKEN":    "gopeed-secret",
 	}
 	t.Run("all set", func(t *testing.T) {
 		if err := validateEnvVars(fullEnv); err != nil {
 			t.Errorf("validateEnvVars unexpected error: %v", err)
 		}
 	})
-	t.Run("missing one", func(t *testing.T) {
+	t.Run("missing QB_USERNAME", func(t *testing.T) {
 		env := maps.Clone(fullEnv)
 		delete(env, "QB_USERNAME")
 		if err := validateEnvVars(env); err == nil || !strings.Contains(err.Error(), "QB_USERNAME") {
 			t.Errorf("expected error mentioning QB_USERNAME, got %v", err)
+		}
+	})
+	t.Run("missing GP_TOKEN", func(t *testing.T) {
+		env := maps.Clone(fullEnv)
+		delete(env, "GP_TOKEN")
+		if err := validateEnvVars(env); err == nil || !strings.Contains(err.Error(), "GP_TOKEN") {
+			t.Errorf("expected error mentioning GP_TOKEN, got %v", err)
 		}
 	})
 }
