@@ -5,7 +5,7 @@ import (
 	"html"
 	"strings"
 
-	gopeed "github.com/gabrielramos02/telegram-bot-go/gopeed-api-go"
+	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
