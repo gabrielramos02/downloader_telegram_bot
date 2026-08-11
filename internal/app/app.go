@@ -1,9 +1,8 @@
-package main
+package app
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -13,23 +12,12 @@ import (
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/joho/godotenv"
 	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
 var bot *tgbotapi.BotAPI
 var qb *qbt.Client
 var gp *gopeed.GopeedClient
-
-var requiredEnvVars = []string{
-	"BOT_TOKEN",
-	"ENV",
-	"QB_URL",
-	"QB_USERNAME",
-	"QB_PASSWORD",
-	"GP_URL",
-	"GP_TOKEN",
-}
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -41,27 +29,7 @@ var l *loggerClient = &loggerClient{
 	close: func() error { return nil },
 }
 
-const ()
-
-func main() {
-	var err error
-
-	err = godotenv.Load(".env")
-	if err != nil {
-		log.Panicf("failed to load .env file: %q", err)
-	}
-	cfg, err := loadConfig(map[string]string{
-		"BOT_TOKEN":   os.Getenv("BOT_TOKEN"),
-		"ENV":         os.Getenv("ENV"),
-		"QB_URL":      os.Getenv("QB_URL"),
-		"QB_USERNAME": os.Getenv("QB_USERNAME"),
-		"QB_PASSWORD": os.Getenv("QB_PASSWORD"),
-		"GP_URL":      os.Getenv("GP_URL"),
-		"GP_TOKEN":    os.Getenv("GP_TOKEN"),
-	})
-	if err != nil {
-		log.Panic(err.Error())
-	}
+func Run(cfg Config) error {
 
 	logger, closeLogger, err := initializeLogger()
 	logger = logger.With(
@@ -104,10 +72,11 @@ func main() {
 		l.log.Info("Gopeed info", slog.String("version", info.Version))
 	}
 
+	// Initialize Telegram bot
 	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		l.log.Error("error during bot initialization", slog.Any("error", err))
-		return
+		return err
 	}
 
 	//bot.Debug = true
@@ -126,39 +95,7 @@ func main() {
 	defer stop()
 	<-stopCtx.Done()
 	cancel()
-}
-func validateEnvVars(vars map[string]string) error {
-	for _, v := range requiredEnvVars {
-		if vars[v] == "" {
-			return fmt.Errorf("required env variable %s not set", v)
-		}
-	}
 	return nil
-}
-
-type config struct {
-	BotToken   string
-	Env        string
-	QBURL      string
-	QBUsername string
-	QBPassword string
-	GPURL      string
-	GPToken    string
-}
-
-func loadConfig(vars map[string]string) (config, error) {
-	if err := validateEnvVars(vars); err != nil {
-		return config{}, err
-	}
-	return config{
-		BotToken:   vars["BOT_TOKEN"],
-		Env:        vars["ENV"],
-		QBURL:      vars["QB_URL"],
-		QBUsername: vars["QB_USERNAME"],
-		QBPassword: vars["QB_PASSWORD"],
-		GPURL:      vars["GP_URL"],
-		GPToken:    vars["GP_TOKEN"],
-	}, nil
 }
 
 func receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"maps"
@@ -39,11 +39,11 @@ func TestLoadConfig(t *testing.T) {
 		"GP_TOKEN":    "gopeed-secret",
 	}
 	t.Run("all env vars set", func(t *testing.T) {
-		cfg, err := loadConfig(fullEnv)
+		cfg, err := LoadConfig(fullEnv)
 		if err != nil {
 			t.Fatalf("loadConfig unexpected error: %v", err)
 		}
-		want := config{
+		want := Config{
 			BotToken:   "tok",
 			Env:        "prod",
 			QBURL:      "http://qb:8080",
@@ -59,33 +59,33 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("missing BOT_TOKEN", func(t *testing.T) {
 		env := maps.Clone(fullEnv)
 		delete(env, "BOT_TOKEN")
-		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "BOT_TOKEN") {
+		if _, err := LoadConfig(env); err == nil || !strings.Contains(err.Error(), "BOT_TOKEN") {
 			t.Errorf("expected error mentioning BOT_TOKEN, got %v", err)
 		}
 	})
 	t.Run("missing QB_PASSWORD", func(t *testing.T) {
 		env := maps.Clone(fullEnv)
 		delete(env, "QB_PASSWORD")
-		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "QB_PASSWORD") {
+		if _, err := LoadConfig(env); err == nil || !strings.Contains(err.Error(), "QB_PASSWORD") {
 			t.Errorf("expected error mentioning QB_PASSWORD, got %v", err)
 		}
 	})
 	t.Run("missing GP_URL", func(t *testing.T) {
 		env := maps.Clone(fullEnv)
 		delete(env, "GP_URL")
-		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_URL") {
+		if _, err := LoadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_URL") {
 			t.Errorf("expected error mentioning GP_URL, got %v", err)
 		}
 	})
 	t.Run("missing GP_TOKEN", func(t *testing.T) {
 		env := maps.Clone(fullEnv)
 		delete(env, "GP_TOKEN")
-		if _, err := loadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_TOKEN") {
+		if _, err := LoadConfig(env); err == nil || !strings.Contains(err.Error(), "GP_TOKEN") {
 			t.Errorf("expected error mentioning GP_TOKEN, got %v", err)
 		}
 	})
 	t.Run("empty env reports first missing", func(t *testing.T) {
-		if _, err := loadConfig(
+		if _, err := LoadConfig(
 			map[string]string{},
 		); err == nil ||
 			!strings.Contains(err.Error(), "BOT_TOKEN") {
