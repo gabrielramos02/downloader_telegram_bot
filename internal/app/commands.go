@@ -13,7 +13,7 @@ import (
 const (
 	startCommand              = "start"
 	getTorrentsCommand        = "get_torrents"
-	getDirectDownloadsCommand = "/get_direct_downloads"
+	getDirectDownloadsCommand = "get_direct_downloads"
 )
 
 func handleCommand(chatID int64, command string) error {

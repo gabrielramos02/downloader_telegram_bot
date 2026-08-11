@@ -32,7 +32,7 @@ func initializeLogger() (*slog.Logger, closeFunc, error) {
 		}
 		closeFunction = func() error {
 			if err := logger.Close(); err != nil {
-				return fmt.Errorf("error flushing file: %v", err)
+				return fmt.Errorf("error flushing file: %w", err)
 			}
 			return nil
 		}
