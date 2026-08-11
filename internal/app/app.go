@@ -130,7 +130,7 @@ func handleMessage(message *tgbotapi.Message) {
 	if isCommand(text) {
 		err = handleCommand(message.Chat.ID, text)
 	} else {
-		err := handleUrl(message.Chat.ID, text)
+		err = handleUrl(message.Chat.ID, text)
 		if err != nil {
 			_, err := bot.Send(tgbotapi.NewMessage(message.Chat.ID, "Error: "+err.Error()))
 			if err != nil {

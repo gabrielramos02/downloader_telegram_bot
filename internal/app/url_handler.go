@@ -34,7 +34,7 @@ func handleUrl(chatID int64, urlString string) error {
 func classifyURL(urlString string) (string, string, error) {
 	urlObject, err := url.Parse(urlString)
 	if err != nil {
-		return "", "", fmt.Errorf("invalid URL: %v", err)
+		return "", "", fmt.Errorf("invalid URL: %w", err)
 	}
 	switch urlObject.Scheme {
 	case "magnet":
@@ -51,11 +51,11 @@ func handleMagnetURL(chatID int64, URL string) error {
 	var err error
 	hash, err := addTorrent(URL)
 	if err != nil {
-		return fmt.Errorf("failed to add torrent: %v", err)
+		return fmt.Errorf("failed to add torrent: %w", err)
 	}
 	torrent, err := getTorrentInfo(hash)
 	if err != nil {
-		return fmt.Errorf("failed to get torrent info: %v", err)
+		return fmt.Errorf("failed to get torrent info: %w", err)
 	}
 	msg := messages.BuildTorrentProgress(chatID, torrent)
 
@@ -189,7 +189,7 @@ func handleHttpURL(chatID int64, URL string) error {
 	defer cancel()
 	ddId, err := gp.CreateTaskFromURL(ctx, URL, opts)
 	if err != nil {
-		return fmt.Errorf("failed to create direct download task: %v", err)
+		return fmt.Errorf("failed to create direct download task: %w", err)
 	}
 	l.log.Debug("Direct download task created with ID:", slog.String("ddId", ddId))
 	ddInfo, err := gp.GetTask(ctx, ddId)
