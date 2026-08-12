@@ -26,7 +26,7 @@ fmt:
 test:
 	go test ./...
 
-check: staticcheck security fmt test 
+check: staticcheck security fmt test-cover
 
 update-deps:
 	go get github.com/gabrielramos02/gopeed-api-go@main
