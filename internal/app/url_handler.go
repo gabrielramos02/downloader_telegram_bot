@@ -47,6 +47,9 @@ func parseURL(urlString string) (scheme string, err error) {
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
+	if urlObject.Scheme == "" {
+		return "", fmt.Errorf("unsupported URL scheme")
+	}
 	return urlObject.Scheme, nil
 }
 

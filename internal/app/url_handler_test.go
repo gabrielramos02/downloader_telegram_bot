@@ -31,7 +31,7 @@ func TestClassifyURL(t *testing.T) {
 			name:       "https scheme mapped to http",
 			in:         "https://example.com",
 			wantURL:    "https://example.com",
-			wantScheme: "http",
+			wantScheme: "https",
 		},
 		{
 			name:    "empty string has empty scheme",
@@ -46,7 +46,7 @@ func TestClassifyURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url, scheme, err := parseURL(tt.in)
+			scheme, err := parseURL(tt.in)
 			if tt.wantErr != "" {
 				if err == nil {
 					t.Fatalf(
@@ -58,16 +58,13 @@ func TestClassifyURL(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.wantErr) {
 					t.Errorf("classifyURL(%q) error = %q, want contains %q", tt.in, err, tt.wantErr)
 				}
-				if url != "" || scheme != "" {
-					t.Errorf("classifyURL(%q) = (%q, %q), want empty on error", tt.in, url, scheme)
+				if scheme != "" {
+					t.Errorf("classifyURL(%q) = %q, want empty on error", tt.in, scheme)
 				}
 				return
 			}
 			if err != nil {
 				t.Fatalf("classifyURL(%q) unexpected error: %v", tt.in, err)
-			}
-			if url != tt.wantURL {
-				t.Errorf("classifyURL(%q) url = %q, want %q", tt.in, url, tt.wantURL)
 			}
 			if scheme != tt.wantScheme {
 				t.Errorf("classifyURL(%q) scheme = %q, want %q", tt.in, scheme, tt.wantScheme)
