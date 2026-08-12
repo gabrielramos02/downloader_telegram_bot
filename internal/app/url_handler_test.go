@@ -46,7 +46,7 @@ func TestClassifyURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url, scheme, err := classifyURL(tt.in)
+			url, scheme, err := parseURL(tt.in)
 			if tt.wantErr != "" {
 				if err == nil {
 					t.Fatalf(
