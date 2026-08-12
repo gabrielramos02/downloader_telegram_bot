@@ -17,34 +17,37 @@ import (
 
 var cancelGoroutines = make(map[int]context.CancelFunc)
 
+var urlHandlers = map[string]func(chatID int64, URL string) error{
+	"magnet": handleMagnetURL,
+	"http":   handleHttpURL,
+	"https":  handleHttpURL,
+}
+
 func handleUrl(chatID int64, urlString string) error {
-	URL, scheme, err := classifyURL(urlString)
+	scheme, err := parseURL(urlString)
 	if err != nil {
 		return err
 	}
-	switch scheme {
-	case "magnet":
-		return handleMagnetURL(chatID, URL)
-	case "http":
-		return handleHttpURL(chatID, URL)
-	default:
-		return nil
+	handler, ok := urlHandlers[scheme]
+	if !ok {
+		_, err = bot.Send(tgbotapi.NewMessage(chatID, "Unsupported URL scheme"))
+		if err != nil {
+			return fmt.Errorf("error sending message: %w", err)
+		}
+		return fmt.Errorf("no handler for URL scheme: %s", scheme)
 	}
+	err = handler(chatID, urlString)
+	if err != nil {
+		return fmt.Errorf("error handling URL: %w", err)
+	}
+	return nil
 }
-func classifyURL(urlString string) (string, string, error) {
+func parseURL(urlString string) (scheme string, err error) {
 	urlObject, err := url.Parse(urlString)
 	if err != nil {
-		return "", "", fmt.Errorf("invalid URL: %w", err)
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
-	switch urlObject.Scheme {
-	case "magnet":
-		return urlString, "magnet", nil
-	case "http", "https":
-		return urlString, "http", nil
-	default:
-		return "", "", fmt.Errorf("unsupported URL scheme: %s", urlObject.Scheme)
-
-	}
+	return urlObject.Scheme, nil
 }
 
 func handleMagnetURL(chatID int64, URL string) error {
@@ -87,7 +90,7 @@ func sendTorrentInfo(chatID int64, hash string, msgSended tgbotapi.Message) {
 			select {
 			case <-ctx.Done():
 				l.log.Debug(
-					"End of goroutine for MessageID",
+					"Cancelled goroutine for MessageID",
 					slog.Int("messageid", msgSended.MessageID),
 				)
 				return
@@ -224,7 +227,7 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 			select {
 			case <-ctx.Done():
 				l.log.Debug(
-					"End of goroutine for MessageID",
+					"Cancelled goroutine for MessageID",
 					slog.Int("messageid", msgSended.MessageID),
 				)
 				return
@@ -250,7 +253,7 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 			}
 		}
 		l.log.Debug(
-			"Direct download completed or stopped for chatID",
+			"Direct download task completed for chatID",
 			slog.Int64("chatID", chatID),
 			slog.String("ddName", ddInfo.Meta.Res.Name),
 			slog.String("ddStatus", string(ddInfo.Status)),

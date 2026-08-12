@@ -131,9 +131,9 @@ func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
 }
 func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error {
 	l.log.Debug("Handling direct download cancel", slog.String("id", id))
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	err := gp.DeleteTask(ctx, id)
+	httpCtx, httpCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer httpCancel()
+	err := gp.DeleteTask(httpCtx, id)
 	if err != nil {
 		return err
 	}
