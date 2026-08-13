@@ -26,7 +26,10 @@ func handleUrl(message *tgbotapi.Message, urlString string) error {
 	ctx := context.Background()
 	_, err := db.GetUserByID(ctx, message.From.ID)
 	if err != nil {
-		msg := tgbotapi.NewMessage(message.Chat.ID, "You are not registered. Please use /start to register.")
+		msg := tgbotapi.NewMessage(
+			message.Chat.ID,
+			"You are not registered. Please use /start to register.",
+		)
 		_, sendErr := bot.Send(msg)
 		if sendErr != nil {
 			return fmt.Errorf("error sending message: %w", sendErr)
@@ -85,10 +88,16 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	})
+	if err != nil {
+		return fmt.Errorf("failed to create file in database: %w", err)
+	}
 	err = db.LinkFileToUser(
 		context.Background(),
 		database.LinkFileToUserParams{FileID: ddId, UserID: chatID},
 	)
+	if err != nil {
+		return fmt.Errorf("failed to link file to user in database: %w", err)
+	}
 	ddInfo, err := gp.GetTask(ctx, ddId)
 	if err != nil {
 		l.log.Error("Error getting direct download task info", slog.Any("error", err))
