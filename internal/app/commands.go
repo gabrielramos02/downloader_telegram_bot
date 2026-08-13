@@ -2,49 +2,32 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	"github.com/gabrielramos02/telegram-bot-go/internal/database"
+	"github.com/gabrielramos02/telegram-bot-go/internal/glances"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const (
-	startCommand              = "start"
-	getDirectDownloadsCommand = "get_direct_downloads"
-)
-
-func handleCommand(chatID int64, command string) error {
-	action, ok := commandAction(command)
-	if !ok {
-		return nil
-	}
-	switch action {
-	case startCommand:
-		return sendStart(chatID)
-	case getDirectDownloadsCommand:
-		return getDirectDownloads(chatID)
-	default:
-		return nil
-
-	}
-
+var commandHandlers = map[string]func(message *tgbotapi.Message) error{
+	"/start":                sendStart,
+	"/get_direct_downloads": getDirectDownloads,
+	"/get_storage_info":     getStorageInfo,
 }
 
-func commandAction(command string) (string, bool) {
-	switch command {
-	case "/start":
-		return startCommand, true
-	case "/get_direct_downloads":
-		return getDirectDownloadsCommand, true
-	default:
-		return "", false
+func handleCommand(message *tgbotapi.Message, command string) error {
+	if handler, exists := commandHandlers[command]; exists {
+		return handler(message)
 	}
+	return fmt.Errorf("no handler for command: %s", command)
 }
 
-func sendStart(chatID int64) error {
+func sendStart(message *tgbotapi.Message) error {
+	chatID := message.Chat.ID
 	msg := tgbotapi.NewMessage(chatID, "Hello to my new bot")
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err := db.CreateUser(context.Background(), database.CreateUserParams{
@@ -63,7 +46,8 @@ func sendStart(chatID int64) error {
 	return nil
 }
 
-func getDirectDownloads(chatID int64) error {
+func getDirectDownloads(message *tgbotapi.Message) error {
+	chatID := message.Chat.ID
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	user, err := db.GetUserByID(ctx, chatID)
@@ -96,4 +80,17 @@ func getDirectDownloads(chatID int64) error {
 		return err
 	}
 	return nil
+}
+
+func getStorageInfo(message *tgbotapi.Message) error {
+	chatID := message.Chat.ID
+	gl := glances.NewClient()
+	fs, err := gl.GetFS(context.Background())
+	if err != nil {
+		return err
+	}
+	msg := messages.BuildStorageInfo(chatID, fs)
+	msg.ReplyToMessageID = message.MessageID
+	_, err = bot.Send(msg)
+	return err
 }

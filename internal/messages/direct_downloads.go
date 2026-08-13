@@ -86,11 +86,21 @@ func buildDirectDownloadKeyboard(taskList []gopeed.GopeedTask) tgbotapi.InlineKe
 			"ℹ️ Info",
 			fmt.Sprintf("dd:info:%s", task.ID),
 		)
-		deleteBtn := tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("🗑 Eliminar %s", truncateFilename(task.Name, 20)),
-			fmt.Sprintf("dd:cancel:%s", task.ID),
-		)
-		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(infoBtn, deleteBtn))
+		actionBtn := buildDirectDownloadActionButton(task)
+		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(infoBtn, actionBtn))
 	}
 	return tgbotapi.NewInlineKeyboardMarkup(buttons...)
+}
+
+func buildDirectDownloadActionButton(task gopeed.GopeedTask) tgbotapi.InlineKeyboardButton {
+	if task.Status == gopeed.GopeedStatusDone {
+		return tgbotapi.NewInlineKeyboardButtonData(
+			fmt.Sprintf("🗑 Eliminar %s", truncateFilename(task.Name, 20)),
+			fmt.Sprintf("dd:delete:%s", task.ID),
+		)
+	}
+	return tgbotapi.NewInlineKeyboardButtonData(
+		fmt.Sprintf("❌ Cancelar %s", truncateFilename(task.Name, 20)),
+		fmt.Sprintf("dd:cancel:%s", task.ID),
+	)
 }
