@@ -7,6 +7,7 @@ type Config struct {
 	Env      string
 	GPURL    string
 	GPToken  string
+	DBURL    string
 }
 
 func validateEnvVars(vars map[string]string) error {
@@ -27,6 +28,7 @@ func LoadConfig(vars map[string]string) (Config, error) {
 		Env:      vars["ENV"],
 		GPURL:    vars["GP_URL"],
 		GPToken:  vars["GP_TOKEN"],
+		DBURL:    vars["DB_URL"],
 	}, nil
 }
 
@@ -35,4 +37,5 @@ var requiredEnvVars = []string{
 	"ENV",
 	"GP_URL",
 	"GP_TOKEN",
+	"DB_URL",
 }
