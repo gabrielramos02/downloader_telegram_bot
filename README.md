@@ -14,10 +14,12 @@ I run my downloads on a home server but I want to control them from my phone wit
 
 - Start direct downloads by sending an HTTP/HTTPS URL or a magnet link.
 - List active direct downloads with formatted messages.
+- User based downloads
 - View detailed progress cards for each download.
 - Pause, continue, cancel, refresh, or get more info through inline keyboards.
 - Live progress updates every 5 seconds while a download is active.
 - Structured logging with `slog` and optional file rotation.
+
 
 ## Quick Start
 
@@ -28,10 +30,6 @@ cd telegram-bot-go
 
 # Download dependencies
 go mod download
-
-# Create and edit your .env file
-cp .env .env.local
-# Edit .env.local with your credentials
 
 # Run the bot
 go run ./cmd/bot
@@ -93,6 +91,7 @@ func main() {
 - [Go](https://go.dev/) 1.26+
 - [go-telegram-bot-api/v5](https://github.com/go-telegram-bot-api/telegram-bot-api)
 - [gopeed-api-go](https://github.com/gabrielramos02/gopeed-api-go)
+- [sqlc](https://github.com/sqlc-dev/sqlc)
 - `log/slog` for structured logging
 - `gopkg.in/natefinch/lumberjack.v2` for log rotation
 
@@ -113,6 +112,8 @@ Create a `.env` file in the project root with the following variables:
 | `GP_URL`      | Gopeed API base URL                          | Yes      |
 | `GP_TOKEN`    | Gopeed API token                             | Yes      |
 | `LOG_FILE`    | Path to rotating log file (optional)         | No       |
+| `DB_URL`      | Path to database file                        | Yes      |
+
 
 Example:
 
@@ -122,6 +123,7 @@ ENV=development
 GP_URL=http://127.0.0.1:9999
 GP_TOKEN=your-gopeed-token
 LOG_FILE=bot.log
+DB_URL=you-db-file-path
 ```
 
 ## Usage
