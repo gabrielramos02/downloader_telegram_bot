@@ -19,6 +19,7 @@ func main() {
 		"ENV":       os.Getenv("ENV"),
 		"GP_URL":    os.Getenv("GP_URL"),
 		"GP_TOKEN":  os.Getenv("GP_TOKEN"),
+		"DB_URL":    os.Getenv("DB_URL"),
 	})
 	if err != nil {
 		slog.Error("failed to load config", slog.String("error", err.Error()))
