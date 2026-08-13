@@ -477,11 +477,26 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 			t.Errorf("right callback data = %v, want %q", right.CallbackData, "dd:cancel:t2")
 		}
 	})
+	t.Run("done shows delete", func(t *testing.T) {
+		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
+			ID:     "t4",
+			Status: gopeed.GopeedStatusDone,
+		})
+		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
+			t.Fatalf("expected one row with one button, got %v", markup.InlineKeyboard)
+		}
+		btn := markup.InlineKeyboard[0][0]
+		if btn.Text != "🗑️ Eliminar" {
+			t.Errorf("button text = %q, want %q", btn.Text, "🗑️ Eliminar")
+		}
+		if btn.CallbackData == nil || *btn.CallbackData != "dd:delete:t4" {
+			t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:delete:t4")
+		}
+	})
 	t.Run("other status only shows cancel", func(t *testing.T) {
 		for _, status := range []gopeed.GopeedStatus{
 			gopeed.GopeedStatusReady,
 			gopeed.GopeedStatusWait,
-			gopeed.GopeedStatusDone,
 			gopeed.GopeedStatusError,
 		} {
 			markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{ID: "t3", Status: status})

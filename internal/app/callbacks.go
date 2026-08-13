@@ -18,6 +18,7 @@ const (
 	ActionRefresh  CallbackAction = "refresh"
 	ActionPause    CallbackAction = "pause"
 	ActionContinue CallbackAction = "continue"
+	ActionDelete   CallbackAction = "delete"
 )
 
 type CallbackScope string
@@ -33,6 +34,7 @@ var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.Callbac
 		ActionRefresh:  handleDirectDownloadRefresh,
 		ActionPause:    handleDirectDownloadPause,
 		ActionContinue: handleDirectDownloadContinue,
+		ActionDelete:   handleDirectDownloadDelete,
 	},
 }
 
@@ -54,7 +56,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 	}
 	err := handler(query, id)
 	if err != nil {
-		l.log.Error("Error handling data")
+		l.log.Error("Error handling data", slog.Any("error", err), slog.String("data", query.Data))
 	}
 }
 
@@ -76,7 +78,13 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 	if err != nil {
 		return err
 	}
-	if cancel, exists := cancelGoroutines[query.Message.MessageID]; exists && cancel != nil {
+	_, err = bot.Request(
+		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download canceled successfully."),
+	)
+	if err != nil {
+		return err
+	}
+	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
 		cancel()
 	}
 	_, err = bot.Send(
@@ -88,12 +96,46 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 	return err
 }
 
+func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error {
+	l.log.Debug("Handling direct download delete", slog.String("id", id))
+	httpCtx, httpCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer httpCancel()
+	err := gp.DeleteTask(httpCtx, id)
+	if err != nil {
+		return err
+	}
+	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
+		cancel()
+	}
+	_, err = bot.Request(
+		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download deleted successfully."),
+	)
+	if err != nil {
+		return err
+	}
+	_, err = bot.Send(
+		tgbotapi.NewEditMessageText(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			"Direct download deleted successfully.",
+		))
+	return err
+}
+
 func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
 	l.log.Debug("Handling direct download info", slog.String("id", id))
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	task, err := gp.GetTask(ctx, id)
 	if err != nil {
+		if strings.Contains(err.Error(), "task not found") {
+			msg := tgbotapi.NewCallbackWithAlert(query.ID, "Direct download task not found.")
+			_, err = bot.Request(msg)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		return err
 	}
 	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
@@ -131,7 +173,7 @@ func handleDirectDownloadPause(query *tgbotapi.CallbackQuery, id string) error {
 	if err != nil {
 		return err
 	}
-	if cancel, exists := cancelGoroutines[query.Message.MessageID]; exists && cancel != nil {
+	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
 		cancel()
 	}
 	task, err := gp.GetTask(ctxReq, id)

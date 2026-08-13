@@ -83,6 +83,14 @@ func buildDirectDownloadInfoMarkup(task gopeed.GopeedTask) tgbotapi.InlineKeyboa
 		return tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(pauseBtn, cancelBtn),
 		)
+	case gopeed.GopeedStatusDone:
+		deleteBtn := tgbotapi.NewInlineKeyboardButtonData(
+			"🗑️ Eliminar",
+			fmt.Sprintf("dd:delete:%s", task.ID),
+		)
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(deleteBtn),
+		)
 	default:
 		return buildDirectDownloadCancelMarkup(task.ID)
 	}
