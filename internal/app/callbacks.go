@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -78,14 +79,26 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 	if err != nil {
 		return err
 	}
+	goroutineKey := fmt.Sprintf("%d-%s", query.Message.Chat.ID, id)
+	if cancel, exists := cancelGoroutines[goroutineKey]; exists && cancel != nil {
+		cancel()
+	}
+	err = db.DeleteFile(context.Background(), id)
+	if err != nil {
+		return err
+	}
+	// err = db.UnlinkFileFromUser(context.Background(), database.UnlinkFileFromUserParams{
+	// 	FileID: id,
+	// 	UserID: query.Message.Chat.ID,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 	_, err = bot.Request(
 		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download canceled successfully."),
 	)
 	if err != nil {
 		return err
-	}
-	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
-		cancel()
 	}
 	_, err = bot.Send(
 		tgbotapi.NewEditMessageText(
@@ -104,7 +117,19 @@ func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error 
 	if err != nil {
 		return err
 	}
-	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
+	err = db.DeleteFile(context.Background(), id)
+	if err != nil {
+		return err
+	}
+	// err = db.UnlinkFileFromUser(context.Background(), database.UnlinkFileFromUserParams{
+	// 	FileID: id,
+	// 	UserID: query.Message.Chat.ID,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
+	goroutineKey := fmt.Sprintf("%d-%s", query.Message.Chat.ID, id)
+	if cancel, exists := cancelGoroutines[goroutineKey]; exists && cancel != nil {
 		cancel()
 	}
 	_, err = bot.Request(
@@ -173,7 +198,8 @@ func handleDirectDownloadPause(query *tgbotapi.CallbackQuery, id string) error {
 	if err != nil {
 		return err
 	}
-	if cancel, exists := cancelGoroutines[id]; exists && cancel != nil {
+	goroutineKey := fmt.Sprintf("%d-%s", query.Message.Chat.ID, id)
+	if cancel, exists := cancelGoroutines[goroutineKey]; exists && cancel != nil {
 		cancel()
 	}
 	task, err := gp.GetTask(ctxReq, id)

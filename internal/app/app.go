@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -18,7 +17,7 @@ import (
 
 var bot *tgbotapi.BotAPI
 var gp *gopeed.GopeedClient
-var db *sql.DB
+var db *database.Queries
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -63,19 +62,20 @@ func Run(cfg Config) error {
 	}
 
 	// Initialize database connection
-	db, err = database.OpenDB(cfg.DBURL)
+	dbIntance, err := database.OpenDB(cfg.DBURL)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 	defer func() {
-		if err = db.Close(); err != nil {
+		if err = dbIntance.Close(); err != nil {
 			l.log.Error("failed to close database", slog.Any("error", err))
 		}
 	}()
-	err = database.Migrate(db)
+	err = database.Migrate(dbIntance)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
+	db = database.New(dbIntance)
 
 	// Initialize Telegram bot
 	bot, err = tgbotapi.NewBotAPI(cfg.BotToken)

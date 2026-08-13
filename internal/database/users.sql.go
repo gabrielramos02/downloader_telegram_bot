@@ -18,7 +18,7 @@ RETURNING id, created_at, updated_at, subscription_id
 `
 
 type CreateUserParams struct {
-	ID             string
+	ID             int64
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	SubscriptionID sql.NullString
@@ -45,7 +45,7 @@ const deleteUser = `-- name: DeleteUser :exec
 DELETE FROM users WHERE id = ?
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id string) error {
+func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
@@ -54,7 +54,7 @@ const getUserByID = `-- name: GetUserByID :one
 SELECT id, created_at, updated_at, subscription_id FROM users WHERE id = ?
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
@@ -140,7 +140,7 @@ WHERE id = ?
 type UpdateUserParams struct {
 	UpdatedAt      time.Time
 	SubscriptionID sql.NullString
-	ID             string
+	ID             int64
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
@@ -158,7 +158,7 @@ WHERE id = ?
 type UpdateUserSubscriptionParams struct {
 	SubscriptionID sql.NullString
 	UpdatedAt      time.Time
-	ID             string
+	ID             int64
 }
 
 func (q *Queries) UpdateUserSubscription(ctx context.Context, arg UpdateUserSubscriptionParams) error {
