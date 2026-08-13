@@ -29,7 +29,8 @@ test:
 check: staticcheck security fmt test-cover
 
 update-deps:
-	go get github.com/gabrielramos02/gopeed-api-go@main
+	go clean -modcache
+	GOPROXY=direct go get github.com/gabrielramos02/gopeed-api-go@main
 	go mod tidy
 
 pre-commit: update-deps check
