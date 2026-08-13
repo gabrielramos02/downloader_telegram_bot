@@ -1,5 +1,5 @@
-github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260813083553-21d9429d7654 h1:RL+It0kihJEnq5QHSYdDKESb2q/lOTrMoFb1NBmi/ZU=
-github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260813083553-21d9429d7654/go.mod h1:J4ArM5kDQlPR7zHKUvD614Nfo/CSP/EvllpH/NSsLUY=
+github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260813125748-3ccdabee2343 h1:3RTcE1g6cIp2qSo7XQYsgD5eZKdemjO8uXkoKmdLg44=
+github.com/gabrielramos02/gopeed-api-go v0.0.2-0.20260813125748-3ccdabee2343/go.mod h1:J4ArM5kDQlPR7zHKUvD614Nfo/CSP/EvllpH/NSsLUY=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
