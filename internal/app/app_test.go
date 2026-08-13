@@ -34,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 		"ENV":       "prod",
 		"GP_URL":    "http://gopeed:9999",
 		"GP_TOKEN":  "gopeed-secret",
+		"DB_URL":    "sqlite3://user:pass@localhost/dbname",
 	}
 	t.Run("all env vars set", func(t *testing.T) {
 		cfg, err := LoadConfig(fullEnv)
@@ -45,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 			Env:      "prod",
 			GPURL:    "http://gopeed:9999",
 			GPToken:  "gopeed-secret",
+			DBURL:    "sqlite3://user:pass@localhost/dbname",
 		}
 		if cfg != want {
 			t.Errorf("loadConfig = %+v, want %+v", cfg, want)
@@ -94,6 +96,7 @@ func TestValidateEnvVars(t *testing.T) {
 		"ENV":       "prod",
 		"GP_URL":    "http://gopeed:9999",
 		"GP_TOKEN":  "gopeed-secret",
+		"DB_URL":    "sqlite3://user:pass@localhost/dbname",
 	}
 	t.Run("all set", func(t *testing.T) {
 		if err := validateEnvVars(fullEnv); err != nil {
