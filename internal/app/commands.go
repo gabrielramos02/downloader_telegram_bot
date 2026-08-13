@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"time"
 
+	gopeed "github.com/gabrielramos02/gopeed-api-go"
+	"github.com/gabrielramos02/telegram-bot-go/internal/database"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -45,7 +47,15 @@ func commandAction(command string) (string, bool) {
 func sendStart(chatID int64) error {
 	msg := tgbotapi.NewMessage(chatID, "Hello to my new bot")
 	msg.ParseMode = tgbotapi.ModeHTML
-	_, err := bot.Send(msg)
+	_, err := db.CreateUser(context.Background(), database.CreateUserParams{
+		ID:        chatID,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		return err
+	}
+	_, err = bot.Send(msg)
 	if err != nil {
 		return err
 	}
@@ -56,9 +66,24 @@ func sendStart(chatID int64) error {
 func getDirectDownloads(chatID int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	tasks, err := gp.GetTasks(ctx, []string{}, "")
+	user, err := db.GetUserByID(ctx, chatID)
 	if err != nil {
 		return err
+	}
+	userFiles, err := db.GetUserFiles(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	var tasks []gopeed.GopeedTask
+	if len(userFiles) > 0 {
+		var fileIDs []string
+		for _, userFile := range userFiles {
+			fileIDs = append(fileIDs, userFile.FileID)
+		}
+		tasks, err = gp.GetTasks(ctx, fileIDs, "")
+		if err != nil {
+			return err
+		}
 	}
 	var msg tgbotapi.MessageConfig
 	if len(tasks) == 0 {

@@ -10,19 +10,18 @@ import (
 )
 
 type File struct {
-	ID        int64
-	Path      string
+	ID        string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
 
 type FilesUser struct {
-	FileID int64
-	UserID string
+	FileID string
+	UserID int64
 }
 
 type User struct {
-	ID             string
+	ID             int64
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	SubscriptionID sql.NullString

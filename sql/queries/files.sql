@@ -12,21 +12,9 @@ WHERE fu.user_id = ?
 ORDER BY f.created_at DESC;
 
 -- name: CreateFile :one
-INSERT INTO files (id, path, created_at, updated_at)
-VALUES (?, ?, ?, ?)
+INSERT INTO files (id, created_at, updated_at)
+VALUES (?, ?, ?)
 RETURNING *;
-
--- name: UpdateFile :exec
-UPDATE files
-SET path = ?,
-    updated_at = ?
-WHERE id = ?;
-
--- name: UpdateFilePath :exec
-UPDATE files
-SET path = ?,
-    updated_at = ?
-WHERE id = ?;
 
 -- name: DeleteFile :exec
 DELETE FROM files WHERE id = ?;

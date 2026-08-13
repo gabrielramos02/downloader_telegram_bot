@@ -9,6 +9,7 @@ import (
 	"time"
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
+	"github.com/gabrielramos02/telegram-bot-go/internal/database"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -22,6 +23,16 @@ var urlHandlers = map[string]func(replyToID int, chatID int64, URL string) error
 }
 
 func handleUrl(message *tgbotapi.Message, urlString string) error {
+	ctx := context.Background()
+	_, err := db.GetUserByID(ctx, message.From.ID)
+	if err != nil {
+		msg := tgbotapi.NewMessage(message.Chat.ID, "You are not registered. Please use /start to register.")
+		_, sendErr := bot.Send(msg)
+		if sendErr != nil {
+			return fmt.Errorf("error sending message: %w", sendErr)
+		}
+		return fmt.Errorf("error getting user from database: %w", err)
+	}
 	chatID := message.Chat.ID
 	scheme, err := parseURL(urlString)
 	if err != nil {
@@ -54,6 +65,7 @@ func parseURL(urlString string) (scheme string, err error) {
 
 func handleHttpURL(replyToID int, chatID int64, URL string) error {
 	opts := gopeed.GopeedOptions{
+		Path:  "/downloads" + "/" + fmt.Sprintf("%d", chatID),
 		Extra: &gopeed.GopeedExtraOptions{Connections: 32},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -68,6 +80,15 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 		return fmt.Errorf("failed to create direct download task: %w", err)
 	}
 	l.log.Debug("Direct download task created with ID:", slog.String("ddId", ddId))
+	_, err = db.CreateFile(context.Background(), database.CreateFileParams{
+		ID:        ddId,
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+	})
+	err = db.LinkFileToUser(
+		context.Background(),
+		database.LinkFileToUserParams{FileID: ddId, UserID: chatID},
+	)
 	ddInfo, err := gp.GetTask(ctx, ddId)
 	if err != nil {
 		l.log.Error("Error getting direct download task info", slog.Any("error", err))
@@ -87,7 +108,8 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mutex := sync.Mutex{}
-	cancelGoroutines[ddInfo.ID] = cancel
+	goroutineKey := fmt.Sprintf("%d-%s", chatID, ddInfo.ID)
+	cancelGoroutines[goroutineKey] = cancel
 	go func() {
 		var err error
 		defer func() {

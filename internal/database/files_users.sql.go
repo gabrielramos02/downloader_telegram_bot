@@ -13,7 +13,7 @@ const countUserFiles = `-- name: CountUserFiles :one
 SELECT COUNT(*) FROM files_users WHERE user_id = ?
 `
 
-func (q *Queries) CountUserFiles(ctx context.Context, userID string) (int64, error) {
+func (q *Queries) CountUserFiles(ctx context.Context, userID int64) (int64, error) {
 	row := q.db.QueryRowContext(ctx, countUserFiles, userID)
 	var count int64
 	err := row.Scan(&count)
@@ -26,7 +26,7 @@ FROM files_users
 WHERE file_id = ?
 `
 
-func (q *Queries) GetFileUsers(ctx context.Context, fileID int64) ([]FilesUser, error) {
+func (q *Queries) GetFileUsers(ctx context.Context, fileID string) ([]FilesUser, error) {
 	rows, err := q.db.QueryContext(ctx, getFileUsers, fileID)
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ FROM files_users
 WHERE user_id = ?
 `
 
-func (q *Queries) GetUserFiles(ctx context.Context, userID string) ([]FilesUser, error) {
+func (q *Queries) GetUserFiles(ctx context.Context, userID int64) ([]FilesUser, error) {
 	rows, err := q.db.QueryContext(ctx, getUserFiles, userID)
 	if err != nil {
 		return nil, err
@@ -84,8 +84,8 @@ VALUES (?, ?)
 `
 
 type LinkFileToUserParams struct {
-	FileID int64
-	UserID string
+	FileID string
+	UserID int64
 }
 
 func (q *Queries) LinkFileToUser(ctx context.Context, arg LinkFileToUserParams) error {
@@ -98,7 +98,7 @@ DELETE FROM files_users
 WHERE file_id = ?
 `
 
-func (q *Queries) UnlinkAllFileUsers(ctx context.Context, fileID int64) error {
+func (q *Queries) UnlinkAllFileUsers(ctx context.Context, fileID string) error {
 	_, err := q.db.ExecContext(ctx, unlinkAllFileUsers, fileID)
 	return err
 }
@@ -108,7 +108,7 @@ DELETE FROM files_users
 WHERE user_id = ?
 `
 
-func (q *Queries) UnlinkAllUserFiles(ctx context.Context, userID string) error {
+func (q *Queries) UnlinkAllUserFiles(ctx context.Context, userID int64) error {
 	_, err := q.db.ExecContext(ctx, unlinkAllUserFiles, userID)
 	return err
 }
@@ -119,8 +119,8 @@ WHERE file_id = ? AND user_id = ?
 `
 
 type UnlinkFileFromUserParams struct {
-	FileID int64
-	UserID string
+	FileID string
+	UserID int64
 }
 
 func (q *Queries) UnlinkFileFromUser(ctx context.Context, arg UnlinkFileFromUserParams) error {
