@@ -13,9 +13,11 @@ import (
 type CallbackAction string
 
 const (
-	ActionCancel  CallbackAction = "cancel"
-	ActionInfo    CallbackAction = "info"
-	ActionRefresh CallbackAction = "refresh"
+	ActionCancel   CallbackAction = "cancel"
+	ActionInfo     CallbackAction = "info"
+	ActionRefresh  CallbackAction = "refresh"
+	ActionPause    CallbackAction = "pause"
+	ActionContinue CallbackAction = "continue"
 )
 
 type CallbackScope string
@@ -35,6 +37,8 @@ var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.Callbac
 		ActionCancel:  handleDirectDownloadCancel,
 		ActionInfo:    handleDirectDownloadInfo,
 		ActionRefresh: handleDirectDownloadRefresh,
+		ActionPause:   handleDirectDownloadPause,
+		ActionContinue: handleDirectDownloadContinue,
 	},
 }
 
@@ -182,5 +186,61 @@ func handleDirectDownloadRefresh(query *tgbotapi.CallbackQuery, id string) error
 		newMsg.ParseMode = tgbotapi.ModeHTML
 	}
 	_, err = bot.Send(newMsg)
+	return err
+}
+
+func handleDirectDownloadPause(query *tgbotapi.CallbackQuery, id string) error {
+	ctxReq, cancelReq := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelReq()
+	err := gp.PauseTask(ctxReq, id)
+	if err != nil {
+		return err
+	}
+	if cancel, exists := cancelGoroutines[query.Message.MessageID]; exists && cancel != nil {
+		cancel()
+	}
+	task, err := gp.GetTask(ctxReq, id)
+	if err != nil {
+		return err
+	}
+	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	var newMsg tgbotapi.EditMessageTextConfig
+	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
+		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			msg.Text,
+			replyMarkup,
+		)
+		newMsg.ParseMode = tgbotapi.ModeHTML
+	}
+	_, err = bot.Send(newMsg)
+	return err
+}
+
+func handleDirectDownloadContinue(query *tgbotapi.CallbackQuery, id string) error {
+	ctxReq, cancelReq := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelReq()
+	err := gp.ContinueTask(ctxReq, id)
+	if err != nil {
+		return err
+	}
+	task, err := gp.GetTask(ctxReq, id)
+	if err != nil {
+		return err
+	}
+	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	var newMsg tgbotapi.EditMessageTextConfig
+	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
+		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			msg.Text,
+			replyMarkup,
+		)
+		newMsg.ParseMode = tgbotapi.ModeHTML
+	}
+	msgSended, err := bot.Send(newMsg)
+	sendDirectDownloadInfo(query.Message.Chat.ID, task, msgSended)
 	return err
 }

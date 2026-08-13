@@ -646,6 +646,67 @@ func TestBuildDirectDownloadCancelMarkup(t *testing.T) {
 	}
 }
 
+func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
+	t.Run("running shows pause then cancel", func(t *testing.T) {
+		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
+			ID:     "t1",
+			Status: gopeed.GopeedStatusRunning,
+		})
+		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+		}
+		left := markup.InlineKeyboard[0][0]
+		if left.Text != "⏸️ Pausar" {
+			t.Errorf("left button text = %q, want %q", left.Text, "⏸️ Pausar")
+		}
+		if left.CallbackData == nil || *left.CallbackData != "dd:pause:t1" {
+			t.Errorf("left callback data = %v, want %q", left.CallbackData, "dd:pause:t1")
+		}
+		right := markup.InlineKeyboard[0][1]
+		if right.CallbackData == nil || *right.CallbackData != "dd:cancel:t1" {
+			t.Errorf("right callback data = %v, want %q", right.CallbackData, "dd:cancel:t1")
+		}
+	})
+	t.Run("paused shows continue then cancel", func(t *testing.T) {
+		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
+			ID:     "t2",
+			Status: gopeed.GopeedStatusPause,
+		})
+		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+		}
+		left := markup.InlineKeyboard[0][0]
+		if left.Text != "▶️ Continuar" {
+			t.Errorf("left button text = %q, want %q", left.Text, "▶️ Continuar")
+		}
+		if left.CallbackData == nil || *left.CallbackData != "dd:continue:t2" {
+			t.Errorf("left callback data = %v, want %q", left.CallbackData, "dd:continue:t2")
+		}
+		right := markup.InlineKeyboard[0][1]
+		if right.CallbackData == nil || *right.CallbackData != "dd:cancel:t2" {
+			t.Errorf("right callback data = %v, want %q", right.CallbackData, "dd:cancel:t2")
+		}
+	})
+	t.Run("other status only shows cancel", func(t *testing.T) {
+		for _, status := range []gopeed.GopeedStatus{
+			gopeed.GopeedStatusReady,
+			gopeed.GopeedStatusWait,
+			gopeed.GopeedStatusDone,
+			gopeed.GopeedStatusError,
+		} {
+			markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{ID: "t3", Status: status})
+			if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
+				t.Errorf("status %s: expected one row with one button, got %v", status, markup.InlineKeyboard)
+				continue
+			}
+			btn := markup.InlineKeyboard[0][0]
+			if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:t3" {
+				t.Errorf("status %s: callback data = %v, want %q", status, btn.CallbackData, "dd:cancel:t3")
+			}
+		}
+	})
+}
+
 func TestBuildDirectDownloadProgress(t *testing.T) {
 	task := gopeed.GopeedTask{
 		ID:       "dd-1",
@@ -685,9 +746,22 @@ func TestBuildDirectDownloadProgress(t *testing.T) {
 	if !ok {
 		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
 	}
-	btn := markup.InlineKeyboard[0][0]
-	if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:dd-1" {
-		t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:dd-1")
+	if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
+		t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+	}
+	pauseBtn := markup.InlineKeyboard[0][0]
+	if pauseBtn.Text != "⏸️ Pausar" {
+		t.Errorf("first button text = %q, want %q", pauseBtn.Text, "⏸️ Pausar")
+	}
+	if pauseBtn.CallbackData == nil || *pauseBtn.CallbackData != "dd:pause:dd-1" {
+		t.Errorf("pause callback data = %v, want %q", pauseBtn.CallbackData, "dd:pause:dd-1")
+	}
+	cancelBtn := markup.InlineKeyboard[0][1]
+	if cancelBtn.Text != "❌ Cancelar" {
+		t.Errorf("second button text = %q, want %q", cancelBtn.Text, "❌ Cancelar")
+	}
+	if cancelBtn.CallbackData == nil || *cancelBtn.CallbackData != "dd:cancel:dd-1" {
+		t.Errorf("cancel callback data = %v, want %q", cancelBtn.CallbackData, "dd:cancel:dd-1")
 	}
 }
 
