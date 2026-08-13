@@ -133,7 +133,7 @@ func handleMessage(message *tgbotapi.Message) {
 	}
 	var err error
 	if isCommand(text) {
-		err = handleCommand(message.Chat.ID, text)
+		err = handleCommand(message, text)
 	} else {
 		err = handleUrl(message, text)
 	}

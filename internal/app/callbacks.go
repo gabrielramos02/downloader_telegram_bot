@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gabrielramos02/telegram-bot-go/internal/glances"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -20,12 +21,14 @@ const (
 	ActionPause    CallbackAction = "pause"
 	ActionContinue CallbackAction = "continue"
 	ActionDelete   CallbackAction = "delete"
+	ActionClose    CallbackAction = "close"
 )
 
 type CallbackScope string
 
 const (
-	ScopeDD CallbackScope = "dd"
+	ScopeDD      CallbackScope = "dd"
+	ScopeStorage CallbackScope = "st"
 )
 
 var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.CallbackQuery, id string) error{
@@ -36,6 +39,10 @@ var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.Callbac
 		ActionPause:    handleDirectDownloadPause,
 		ActionContinue: handleDirectDownloadContinue,
 		ActionDelete:   handleDirectDownloadDelete,
+	},
+	ScopeStorage: {
+		ActionRefresh: handleStorageRefresh,
+		ActionClose:   handleStorageClose,
 	},
 }
 
@@ -245,5 +252,37 @@ func handleDirectDownloadContinue(query *tgbotapi.CallbackQuery, id string) erro
 	}
 	msgSended, err := bot.Send(newMsg)
 	sendDirectDownloadInfo(query.Message.Chat.ID, task, msgSended)
+	return err
+}
+
+func handleStorageRefresh(query *tgbotapi.CallbackQuery, id string) error {
+	_, err := bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.MessageID))
+	if err != nil {
+		return err
+	}
+	msg := tgbotapi.NewMessage(query.Message.Chat.ID, "Loading storage info...")
+	loadingMsg, err := bot.Send(msg)
+	if err != nil {
+		return err
+	}
+
+	gl := glances.NewClient()
+	fs, err := gl.GetFS(context.Background())
+	if err != nil {
+		return err
+	}
+	_, err = bot.Request(tgbotapi.NewDeleteMessage(loadingMsg.Chat.ID, loadingMsg.MessageID))
+	if err != nil {
+		return err
+	}
+	msg = messages.BuildStorageInfo(query.Message.Chat.ID, fs)
+	msg.ReplyToMessageID = query.Message.ReplyToMessage.MessageID
+	_, err = bot.Send(msg)
+	return err
+}
+
+func handleStorageClose(query *tgbotapi.CallbackQuery, id string) error {
+	_, err := bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.MessageID))
+	_, err = bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.ReplyToMessage.MessageID))
 	return err
 }
