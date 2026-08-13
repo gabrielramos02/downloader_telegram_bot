@@ -23,13 +23,13 @@ func OpenDB(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
-func Migrate(db *sql.DB) error{
+func Migrate(db *sql.DB) error {
 	goose.SetBaseFS(schema.FS)
 	err := goose.SetDialect("sqlite3")
 	if err != nil {
 		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
-	err = goose.Up(db, ".", nil)
+	err = goose.Up(db, ".")
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -11,11 +12,13 @@ import (
 	"time"
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
+	"github.com/gabrielramos02/telegram-bot-go/internal/database"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var bot *tgbotapi.BotAPI
 var gp *gopeed.GopeedClient
+var db *sql.DB
 
 type loggerClient struct {
 	log   *slog.Logger
@@ -57,6 +60,21 @@ func Run(cfg Config) error {
 		l.log.Error("error getting Gopeed info", slog.Any("error", err))
 	} else {
 		l.log.Info("Gopeed info", slog.String("version", info.Version))
+	}
+
+	// Initialize database connection
+	db, err = database.OpenDB(cfg.DBURL)
+	if err != nil {
+		return fmt.Errorf("failed to open database: %w", err)
+	}
+	defer func() {
+		if err = db.Close(); err != nil {
+			l.log.Error("failed to close database", slog.Any("error", err))
+		}
+	}()
+	err = database.Migrate(db)
+	if err != nil {
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	// Initialize Telegram bot
