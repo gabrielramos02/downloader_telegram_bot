@@ -36,7 +36,7 @@ func BuildDirectDownloadProgress(chatID int64, task gopeed.GopeedTask) tgbotapi.
 
 	msg := tgbotapi.NewMessage(chatID, htmlString)
 	msg.ParseMode = tgbotapi.ModeHTML
-	msg.ReplyMarkup = buildDirectDownloadCancelMarkup(task.ID)
+	msg.ReplyMarkup = buildDirectDownloadInfoMarkup(task)
 	return msg
 }
 
@@ -62,6 +62,30 @@ func effectiveTaskSize(task gopeed.GopeedTask) int64 {
 		fileSize += f.Size
 	}
 	return fileSize
+}
+
+func buildDirectDownloadInfoMarkup(task gopeed.GopeedTask) tgbotapi.InlineKeyboardMarkup {
+	cancelBtn := tgbotapi.NewInlineKeyboardButtonData("❌ Cancelar", fmt.Sprintf("dd:cancel:%s", task.ID))
+	switch task.Status {
+	case gopeed.GopeedStatusPause:
+		continueBtn := tgbotapi.NewInlineKeyboardButtonData(
+			"▶️ Continuar",
+			fmt.Sprintf("dd:continue:%s", task.ID),
+		)
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(continueBtn, cancelBtn),
+		)
+	case gopeed.GopeedStatusRunning:
+		pauseBtn := tgbotapi.NewInlineKeyboardButtonData(
+			"⏸️ Pausar",
+			fmt.Sprintf("dd:pause:%s", task.ID),
+		)
+		return tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(pauseBtn, cancelBtn),
+		)
+	default:
+		return buildDirectDownloadCancelMarkup(task.ID)
+	}
 }
 
 func buildDirectDownloadCancelMarkup(taskID string) tgbotapi.InlineKeyboardMarkup {

@@ -242,8 +242,8 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 					l.log.Error("Error getting direct download task info", slog.Any("error", err))
 					return
 				}
-				msg := messages.BuildDirectDownloadProgress(chatID, ddInfo)
-				newMsg := tgbotapi.NewEditMessageText(chatID, msgSended.MessageID, msg.Text)
+				msg := messages.BuildDirectDownloadProgress(msgSended.Chat.ID, ddInfo)
+				newMsg := tgbotapi.NewEditMessageText(msg.ChatID, msgSended.MessageID, msg.Text)
 				newMsg.ParseMode = tgbotapi.ModeHTML
 				if markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
 					newMsg.ReplyMarkup = &markup
