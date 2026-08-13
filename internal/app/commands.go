@@ -56,7 +56,7 @@ func sendStart(chatID int64) error {
 func getDirectDownloads(chatID int64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	tasks, err := gp.GetTasks(ctx)
+	tasks, err := gp.GetTasks(ctx, []string{}, "")
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var cancelGoroutines = make(map[int]context.CancelFunc)
+var cancelGoroutines = make(map[string]context.CancelFunc)
 
 var urlHandlers = map[string]func(replyToID int, chatID int64, URL string) error{
 	"magnet": handleHttpURL,
@@ -58,6 +58,11 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	msg := tgbotapi.NewMessage(chatID, "⏳ Creating direct download task...")
+	msgSended, err := bot.Send(msg)
+	if err != nil {
+		return fmt.Errorf("error sending message: %w", err)
+	}
 	ddId, err := gp.CreateTaskFromURL(ctx, URL, opts)
 	if err != nil {
 		return fmt.Errorf("failed to create direct download task: %w", err)
@@ -68,21 +73,26 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 		l.log.Error("Error getting direct download task info", slog.Any("error", err))
 		return err
 	}
-	msg := messages.BuildDirectDownloadProgress(chatID, ddInfo)
+	_, err = bot.Request(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
+	if err != nil {
+		return fmt.Errorf("error deleting message: %w", err)
+	}
+	msg = messages.BuildDirectDownloadProgress(chatID, ddInfo)
 	msg.ReplyToMessageID = replyToID
-	msgSended, err := bot.Send(msg)
+	msgSended, err = bot.Send(msg)
 	sendDirectDownloadInfo(chatID, ddInfo, msgSended)
 	return err
 }
+
 func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tgbotapi.Message) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mutex := sync.Mutex{}
-	cancelGoroutines[msgSended.MessageID] = cancel
+	cancelGoroutines[ddInfo.ID] = cancel
 	go func() {
 		var err error
 		defer func() {
 			mutex.Lock()
-			delete(cancelGoroutines, msgSended.MessageID)
+			delete(cancelGoroutines, ddInfo.ID)
 			mutex.Unlock()
 			l.log.Debug(
 				"End of goroutine for MessageID",
@@ -141,11 +151,11 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 		if err != nil {
 			l.log.Error("Error sending final message", slog.Any("error", err))
 		}
-		_, err = bot.Send(tgbotapi.NewDeleteMessage(chatID, msgSended.ReplyToMessage.MessageID))
+		_, err = bot.Request(tgbotapi.NewDeleteMessage(chatID, msgSended.ReplyToMessage.MessageID))
 		if err != nil {
 			l.log.Error("Error deleting message", slog.Any("error", err))
 		}
-		_, err = bot.Send(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
+		_, err = bot.Request(tgbotapi.NewDeleteMessage(chatID, msgSended.MessageID))
 		if err != nil {
 			l.log.Error("Error deleting message", slog.Any("error", err))
 		}
