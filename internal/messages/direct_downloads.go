@@ -41,7 +41,7 @@ func formatDirectDownloadTask(index int, task gopeed.GopeedTask) string {
 	var urlText string
 	url := strings.TrimSpace(task.Meta.Req.URL)
 	if url != "" {
-		urlText = fmt.Sprintf("<b>URL:</b> <code>%s</code>\n", escapeHTML(url))
+		urlText = fmt.Sprintf("<b>URL:</b> %s\n", formatURLLink(url))
 	}
 
 	return fmt.Sprintf(

@@ -7,7 +7,6 @@ import (
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
 func TestFormatBytes(t *testing.T) {
@@ -29,57 +28,6 @@ func TestFormatBytes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := formatBytes(tt.in); got != tt.want {
 				t.Errorf("formatBytes(%d) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFormatStatus(t *testing.T) {
-	tests := []struct {
-		in, want string
-	}{
-		{"downloading", "⏬ Downloading"},
-		{"stalledDL", "⏳ Stalled DL"},
-		{"stalledUP", "⏸️ Stalled UP"},
-		{"stoppedDL", "⏹️ Stopped"},
-		{"pausedDL", "⏹️ Stopped"},
-		{"completed", "✅ Completed"},
-		{"uploading", "✅ Completed"},
-		{"unknown-state", "unknown-state"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
-			if got := formatStatus(tt.in); got != tt.want {
-				t.Errorf("formatStatus(%q) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFormatETA(t *testing.T) {
-	tests := []struct {
-		name     string
-		eta      int64
-		progress float64
-		want     string
-	}{
-		{"done when progress complete", 5000, 1.0, "Done"},
-		{"eta zero", 0, 0.5, "--"},
-		{"eta negative", -1, 0.5, "--"},
-		{"eta at large threshold", 8640000, 0.5, "--"},
-		{"just under large threshold", 8639999, 0.5, "99d"},
-		{"two days", 172800, 0.5, "2d"},
-		{"days round down", 90000, 0.5, "1d"},
-		{"hour and minute", 3660, 0.5, "1h 1m"},
-		{"exact hour", 3600, 0.5, "1h 0m"},
-		{"minute and seconds", 90, 0.5, "1m 30s"},
-		{"under one minute", 45, 0.5, "0m 45s"},
-		{"one second", 1, 0.5, "0m 1s"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := formatETA(tt.eta, tt.progress); got != tt.want {
-				t.Errorf("formatETA(%d, %v) = %q, want %q", tt.eta, tt.progress, got, tt.want)
 			}
 		})
 	}
@@ -146,185 +94,27 @@ func TestEscapeHTML(t *testing.T) {
 	}
 }
 
-func TestBuildCancelMarkup(t *testing.T) {
-	markup := buildCancelMarkup("abc123")
-	if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
-		t.Fatalf("expected exactly one button row with one button, got %v", markup.InlineKeyboard)
+func TestFormatURLLink(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"plain url", "https://example.com/file.iso",
+			`<a href="https://example.com/file.iso">Link</a>`},
+		{"query with ampersand", "https://x.com?a=1&b=2",
+			`<a href="https://x.com?a=1&amp;b=2">Link</a>`},
+		{"url with html chars", "https://x.com/<a>&b",
+			`<a href="https://x.com/&lt;a&gt;&amp;b">Link</a>`},
+		{"magnet wrapped in code", "magnet:?xt=urn:btih:abc&dn=file",
+			`<code>magnet:?xt=urn:btih:abc&amp;dn=file</code>`},
 	}
-	btn := markup.InlineKeyboard[0][0]
-	if btn.Text != "❌ Cancelar" {
-		t.Errorf("button text = %q, want %q", btn.Text, "❌ Cancelar")
-	}
-	if btn.CallbackData == nil || *btn.CallbackData != "torrent:cancel:abc123" {
-		t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:cancel:abc123")
-	}
-}
-
-func TestBuildInlineKeyboard(t *testing.T) {
-	t.Run("empty list", func(t *testing.T) {
-		if markup := buildInlineKeyboard(nil); len(markup.InlineKeyboard) != 0 {
-			t.Errorf("expected no rows, got %v", markup.InlineKeyboard)
-		}
-	})
-	t.Run("one row per torrent", func(t *testing.T) {
-		torrents := []qbt.TorrentInfo{
-			{Name: "First Movie", Hash: "aaa"},
-			{Name: "Second Very Long Movie Name", Hash: "bbb"},
-		}
-		markup := buildInlineKeyboard(torrents)
-		if len(markup.InlineKeyboard) != 2 {
-			t.Fatalf("expected 2 rows, got %d", len(markup.InlineKeyboard))
-		}
-		first := markup.InlineKeyboard[0][0]
-		if want := "🔍 Ver #1 (First Movie)"; first.Text != want {
-			t.Errorf("first button text = %q, want %q", first.Text, want)
-		}
-		if first.CallbackData == nil || *first.CallbackData != "torrent:info:aaa" {
-			t.Errorf("first callback data = %v, want %q", first.CallbackData, "torrent:info:aaa")
-		}
-		second := markup.InlineKeyboard[1][0]
-		if want := "🔍 Ver #2 (Second Very ...)"; second.Text != want {
-			t.Errorf("second button text = %q, want %q", second.Text, want)
-		}
-	})
-}
-
-func TestBuildTorrentProgress(t *testing.T) {
-	torrent := qbt.TorrentInfo{
-		Name:      "Ubuntu <24.04> & More",
-		Progress:  0.5,
-		TotalSize: 1048576,
-		Dlspeed:   1024,
-		Upspeed:   512,
-		Eta:       3600,
-		NumSeeds:  5,
-		NumLeechs: 3,
-		SavePath:  "/downloads/ubuntu",
-		Hash:      "abc",
-	}
-	msg := BuildTorrentProgress(123, torrent)
-	if msg.ChatID != 123 {
-		t.Errorf("chat id = %d, want 123", msg.ChatID)
-	}
-	if msg.ParseMode != tgbotapi.ModeHTML {
-		t.Errorf("parse mode = %q, want %q", msg.ParseMode, tgbotapi.ModeHTML)
-	}
-	for _, want := range []string{
-		"<b>📌 Ubuntu &lt;24.04&gt; &amp; More</b>",
-		"<code>[█████░░░░░]</code> 50.0%",
-		"512.0KB / 1.0MB",
-		"⬇️ 1.0KB/s | ⬆️ 512 B/s",
-		"1h 0m",
-		"🌱 5 | 👤 3",
-		"<code>/downloads/ubuntu</code>",
-	} {
-		if !strings.Contains(msg.Text, want) {
-			t.Errorf("message missing %q in:\n%s", want, msg.Text)
-		}
-	}
-	markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
-	if !ok {
-		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
-	}
-	btn := markup.InlineKeyboard[0][0]
-	if btn.CallbackData == nil || *btn.CallbackData != "torrent:cancel:abc" {
-		t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:cancel:abc")
-	}
-}
-
-func TestBuildTorrentInfo(t *testing.T) {
-	torrent := qbt.TorrentInfo{
-		Name:      "Some <File>",
-		State:     "downloading",
-		Progress:  0.75,
-		Size:      1048576,
-		Dlspeed:   2048,
-		Upspeed:   0,
-		NumSeeds:  10,
-		NumLeechs: 2,
-		Eta:       3600,
-		Hash:      "hash1",
-	}
-	msg := BuildTorrentInfo(99, torrent)
-	if msg.ChatID != 99 || msg.ParseMode != tgbotapi.ModeHTML {
-		t.Errorf("chat/parse = %d/%q, want 99/%q", msg.ChatID, msg.ParseMode, tgbotapi.ModeHTML)
-	}
-	for _, want := range []string{
-		"📌 <b>Some &lt;File&gt;</b>",
-		"<b>State:</b> ⏬ Downloading",
-		"<code>[███████░░░]</code> 75.0%",
-		"1.0MB",
-		"⬇️ <code>2.0KB/s</code>",
-		"10 / 2",
-	} {
-		if !strings.Contains(msg.Text, want) {
-			t.Errorf("message missing %q in:\n%s", want, msg.Text)
-		}
-	}
-	markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
-	if !ok {
-		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
-	}
-	seen := map[string]bool{}
-	for _, row := range markup.InlineKeyboard {
-		for _, btn := range row {
-			if btn.CallbackData != nil {
-				seen[*btn.CallbackData] = true
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatURLLink(tt.in); got != tt.want {
+				t.Errorf("formatURLLink(%q) = %q, want %q", tt.in, got, tt.want)
 			}
-		}
-	}
-	for _, want := range []string{"torrent:cancel:hash1", "torrent:refresh:hash1"} {
-		if !seen[want] {
-			t.Errorf("keyboard missing button %q, got %v", want, seen)
-		}
-	}
-}
-
-func TestBuildTorrentList(t *testing.T) {
-	t.Run("empty list", func(t *testing.T) {
-		msg := BuildTorrentList(1, nil)
-		if msg.ChatID != 1 {
-			t.Errorf("chat id = %d, want 1", msg.ChatID)
-		}
-		if !strings.Contains(msg.Text, "<pre>") || !strings.Contains(msg.Text, "</pre>") {
-			t.Errorf("expected pre block, got:\n%s", msg.Text)
-		}
-	})
-	t.Run("single torrent row and keyboard", func(t *testing.T) {
-		torrents := []qbt.TorrentInfo{
-			{
-				Name:     "movie.iso",
-				Size:     1073741824,
-				State:    "downloading",
-				Progress: 0.5,
-				Dlspeed:  102400,
-				Eta:      7200,
-				Hash:     "h1",
-			},
-		}
-		msg := BuildTorrentList(1, torrents)
-		for _, want := range []string{"movie.iso", "1.0GB", "⏬ Downloading", "100.0KB/s", "2h 0m"} {
-			if !strings.Contains(msg.Text, want) {
-				t.Errorf("message missing %q in:\n%s", want, msg.Text)
-			}
-		}
-		markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
-		if !ok {
-			t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
-		}
-		btn := markup.InlineKeyboard[0][0]
-		if btn.CallbackData == nil || *btn.CallbackData != "torrent:info:h1" {
-			t.Errorf("callback data = %v, want %q", btn.CallbackData, "torrent:info:h1")
-		}
-	})
-}
-
-func TestFormatRow(t *testing.T) {
-	row := formatRow("SomeFile.tar.gz", 1048576, "downloading", 0.5, 1024, 3600)
-	for _, want := range []string{"SomeFile.tar.gz", "1.0MB", "⏬ Downloading", "1.0KB/s", "1h 0m"} {
-		if !strings.Contains(row, want) {
-			t.Errorf("row missing %q in:\n%s", want, row)
-		}
+		})
 	}
 }
 

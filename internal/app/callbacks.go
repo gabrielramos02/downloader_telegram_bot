@@ -23,16 +23,10 @@ const (
 type CallbackScope string
 
 const (
-	ScopeTorrent CallbackScope = "torrent"
-	ScopeDD      CallbackScope = "dd"
+	ScopeDD CallbackScope = "dd"
 )
 
 var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.CallbackQuery, id string) error{
-	ScopeTorrent: {
-		ActionCancel:  handleTorrentCancel,
-		ActionInfo:    handleTorrentInfo,
-		ActionRefresh: handleRefreshTorrentInfo,
-	},
 	ScopeDD: {
 		ActionCancel:   handleDirectDownloadCancel,
 		ActionInfo:     handleDirectDownloadInfo,
@@ -73,66 +67,7 @@ func parseCallbackData(
 	}
 	return CallbackScope(parts[0]), CallbackAction(parts[1]), parts[2], true
 }
-func handleTorrentCancel(query *tgbotapi.CallbackQuery, id string) error {
-	message := query.Message
-	err := qb.Delete([]string{id}, true)
-	if err != nil {
-		return err
-	}
-	if cancel, exists := cancelGoroutines[message.MessageID]; exists && cancel != nil {
-		cancel()
-	}
-	_, err = bot.Send(
-		tgbotapi.NewEditMessageText(
-			message.Chat.ID,
-			message.MessageID,
-			"Torrent canceled successfully.",
-		),
-	)
-	if err != nil {
-		l.log.Error("Error sending message", slog.Any("error", err))
-		return err
-	}
-	return nil
-}
 
-func handleTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
-	chatID := query.Message.Chat.ID
-	torrent, err := getTorrentInfo(id)
-	if err != nil {
-		return err
-	}
-	msg := messages.BuildTorrentInfo(chatID, torrent)
-	_, err = bot.Send(msg)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func handleRefreshTorrentInfo(query *tgbotapi.CallbackQuery, id string) error {
-	torrent, err := getTorrentInfo(id)
-	if err != nil {
-		return err
-	}
-	msg := messages.BuildTorrentInfo(query.Message.Chat.ID, torrent)
-	var newMsg tgbotapi.EditMessageTextConfig
-	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
-		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
-			query.Message.Chat.ID,
-			query.Message.MessageID,
-			msg.Text,
-			replyMarkup,
-		)
-		newMsg.ParseMode = tgbotapi.ModeHTML
-	}
-	_, err = bot.Send(newMsg)
-	if err != nil {
-		return err
-	}
-	return nil
-
-}
 func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error {
 	l.log.Debug("Handling direct download cancel", slog.String("id", id))
 	httpCtx, httpCancel := context.WithTimeout(context.Background(), 30*time.Second)

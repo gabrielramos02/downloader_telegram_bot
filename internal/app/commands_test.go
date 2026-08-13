@@ -12,7 +12,7 @@ func TestCommandAction(t *testing.T) {
 		wantOK bool
 	}{
 		{"start command", "/start", startCommand, true},
-		{"get torrents command", "/get_torrents", getTorrentsCommand, true},
+		{"get direct downloads command", "/get_direct_downloads", getDirectDownloadsCommand, true},
 		{"unknown command", "/unknown", "", false},
 		{"empty command", "", "", false},
 		{"bare slash", "/", "", false},

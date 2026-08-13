@@ -3,13 +3,10 @@ package app
 import "fmt"
 
 type Config struct {
-	BotToken   string
-	Env        string
-	QBURL      string
-	QBUsername string
-	QBPassword string
-	GPURL      string
-	GPToken    string
+	BotToken string
+	Env      string
+	GPURL    string
+	GPToken  string
 }
 
 func validateEnvVars(vars map[string]string) error {
@@ -26,22 +23,16 @@ func LoadConfig(vars map[string]string) (Config, error) {
 		return Config{}, err
 	}
 	return Config{
-		BotToken:   vars["BOT_TOKEN"],
-		Env:        vars["ENV"],
-		QBURL:      vars["QB_URL"],
-		QBUsername: vars["QB_USERNAME"],
-		QBPassword: vars["QB_PASSWORD"],
-		GPURL:      vars["GP_URL"],
-		GPToken:    vars["GP_TOKEN"],
+		BotToken: vars["BOT_TOKEN"],
+		Env:      vars["ENV"],
+		GPURL:    vars["GP_URL"],
+		GPToken:  vars["GP_TOKEN"],
 	}, nil
 }
 
 var requiredEnvVars = []string{
 	"BOT_TOKEN",
 	"ENV",
-	"QB_URL",
-	"QB_USERNAME",
-	"QB_PASSWORD",
 	"GP_URL",
 	"GP_TOKEN",
 }
