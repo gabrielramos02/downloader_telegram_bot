@@ -13,11 +13,12 @@ func TestParseCallbackData(t *testing.T) {
 		wantID     string
 		wantOK     bool
 	}{
-		{"torrent cancel", "torrent:cancel:abc123", ScopeTorrent, ActionCancel, "abc123", true},
-		{"torrent info", "torrent:info:xyz", ScopeTorrent, ActionInfo, "xyz", true},
-		{"torrent refresh", "torrent:refresh:zzz", ScopeTorrent, ActionRefresh, "zzz", true},
 		{"dd cancel", "dd:cancel:task1", ScopeDD, ActionCancel, "task1", true},
-		{"empty id", "torrent:cancel:", ScopeTorrent, ActionCancel, "", true},
+		{"dd info", "dd:info:xyz", ScopeDD, ActionInfo, "xyz", true},
+		{"dd refresh", "dd:refresh:zzz", ScopeDD, ActionRefresh, "zzz", true},
+		{"dd pause", "dd:pause:task2", ScopeDD, ActionPause, "task2", true},
+		{"dd continue", "dd:continue:task3", ScopeDD, ActionContinue, "task3", true},
+		{"empty id", "dd:cancel:", ScopeDD, ActionCancel, "", true},
 		{"unknown scope parses ok", "delete:cancel:abc", "delete", "cancel", "abc", true},
 		{"missing parts", "info", "", "", "", false},
 		{"empty data", "", "", "", "", false},

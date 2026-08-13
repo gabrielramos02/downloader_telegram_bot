@@ -12,11 +12,9 @@ import (
 
 	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/superturkey650/go-qbittorrent/qbt"
 )
 
 var bot *tgbotapi.BotAPI
-var qb *qbt.Client
 var gp *gopeed.GopeedClient
 
 type loggerClient struct {
@@ -48,17 +46,6 @@ func Run(cfg Config) error {
 		}
 	}()
 
-	// Initialize qBittorrent client
-	qb = qbt.NewClient(cfg.QBURL)
-	err = qb.Login(cfg.QBUsername, cfg.QBPassword)
-	if err != nil {
-		l.log.Error("error during login", slog.Any("error", err))
-	}
-	if qbVersion, err := qb.WebAPIVersion(); err != nil {
-		l.log.Error("error getting qBittorrent version", slog.Any("error", err))
-	} else {
-		l.log.Info("qBittorrent version", slog.String("version", qbVersion))
-	}
 	// Initialize Gopeed client
 	gp, err = gopeed.NewClient(cfg.GPURL, gopeed.WithAPIToken(cfg.GPToken))
 	if err != nil {
@@ -130,7 +117,7 @@ func handleMessage(message *tgbotapi.Message) {
 	if isCommand(text) {
 		err = handleCommand(message.Chat.ID, text)
 	} else {
-		err = handleUrl(message.Chat.ID, text)
+		err = handleUrl(message, text)
 	}
 	if err != nil {
 		l.log.Error("Error handling message", slog.Any("error", err))

@@ -31,7 +31,7 @@ func BuildDirectDownloadProgress(chatID int64, task gopeed.GopeedTask) tgbotapi.
 	)
 
 	if task.Meta.Req.URL != "" {
-		htmlString += fmt.Sprintf("<b>URL:</b> <code>%s</code>\n", escapeHTML(task.Meta.Req.URL))
+		htmlString += fmt.Sprintf("<b>URL:</b> %s\n", formatURLLink(task.Meta.Req.URL))
 	}
 
 	msg := tgbotapi.NewMessage(chatID, htmlString)
