@@ -184,10 +184,10 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 				"Direct download task ended with error",
 				slog.Int64("chatID", chatID))
 		}
-		msgText := fmt.Sprintf("✅ <b>Download Complete!</b> Your file: %s is ready.", ddInfo.Name)
-		finalMsg := tgbotapi.NewMessage(chatID, msgText)
-		finalMsg.ParseMode = tgbotapi.ModeHTML
-		_, err = bot.Send(finalMsg)
+		msgText := "✅ <b>Download Complete!</b>\n"
+		buildMsg := messages.BuildDirectDownloadProgressAuto(chatID, ddInfo)
+		buildMsg.Text = msgText + buildMsg.Text
+		_, err = bot.Send(buildMsg)
 		if err != nil {
 			l.log.Error("Error sending final message", slog.Any("error", err))
 		}
