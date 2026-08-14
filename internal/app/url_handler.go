@@ -107,7 +107,7 @@ func handleHttpURL(replyToID int, chatID int64, URL string) error {
 	if err != nil {
 		return fmt.Errorf("error deleting message: %w", err)
 	}
-	msg = messages.BuildDirectDownloadProgress(chatID, ddInfo)
+	msg = messages.BuildDirectDownloadProgressAuto(chatID, ddInfo)
 	msg.ReplyToMessageID = replyToID
 	msgSended, err = bot.Send(msg)
 	sendDirectDownloadInfo(chatID, ddInfo, msgSended)
@@ -158,7 +158,7 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 					l.log.Error("Error getting direct download task info", slog.Any("error", err))
 					return
 				}
-				msg := messages.BuildDirectDownloadProgress(msgSended.Chat.ID, ddInfo)
+				msg := messages.BuildDirectDownloadProgressAuto(msgSended.Chat.ID, ddInfo)
 				newMsg := tgbotapi.NewEditMessageText(msg.ChatID, msgSended.MessageID, msg.Text)
 				newMsg.ParseMode = tgbotapi.ModeHTML
 				if markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {

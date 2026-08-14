@@ -12,6 +12,7 @@ import (
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+
 const RefreshList string = "refresh_list"
 
 type CallbackAction string
@@ -200,7 +201,7 @@ func handleDirectDownloadPause(query *tgbotapi.CallbackQuery, id string) error {
 	if err != nil {
 		return err
 	}
-	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	msg := messages.BuildDirectDownloadProgressAuto(query.Message.Chat.ID, task)
 	var newMsg tgbotapi.EditMessageTextConfig
 	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
 		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
@@ -226,7 +227,7 @@ func handleDirectDownloadContinue(query *tgbotapi.CallbackQuery, id string) erro
 	if err != nil {
 		return err
 	}
-	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
+	msg := messages.BuildDirectDownloadProgressAuto(query.Message.Chat.ID, task)
 	var newMsg tgbotapi.EditMessageTextConfig
 	if replyMarkup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
 		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
@@ -301,7 +302,16 @@ func handleDirectDownloadRefreshList(query *tgbotapi.CallbackQuery, id string) e
 	}
 	var msg tgbotapi.MessageConfig
 	if len(tasks) == 0 {
-		msg = tgbotapi.NewMessage(chatID, "No direct download tasks found.")
+		editMsg := tgbotapi.NewEditMessageText(
+			chatID,
+			query.Message.MessageID,
+			"No direct download tasks found.",
+		)
+		_, err := bot.Request(editMsg)
+		if err != nil {
+			return err
+		}
+		return nil
 	} else {
 		msg = messages.BuildDirectDownloads(chatID, tasks)
 	}
@@ -313,6 +323,7 @@ func handleDirectDownloadRefreshList(query *tgbotapi.CallbackQuery, id string) e
 			msg.Text,
 			markup,
 		)
+		newMsg.ParseMode = tgbotapi.ModeHTML
 	}
 	_, err = bot.Send(newMsg)
 	return err
