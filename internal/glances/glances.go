@@ -29,7 +29,7 @@ type ClientOption func(*Client)
 func NewClient(opts ...ClientOption) *Client {
 	c := &Client{
 		baseURL:    defaultBaseURL,
-		httpClient: &http.Client{},
+		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
 	for _, opt := range opts {
 		opt(c)

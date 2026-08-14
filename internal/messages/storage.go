@@ -41,7 +41,7 @@ func buildStorageInfoMarkup() tgbotapi.InlineKeyboardMarkup {
 func filterRootMount(filesystems []glances.FileSystem) []glances.FileSystem {
 	var rootFS []glances.FileSystem
 	for _, fs := range filesystems {
-		if fs.MountPoint == "/rootfs" {
+		if fs.MountPoint == "/" || fs.MountPoint == "/rootfs" {
 			rootFS = append(rootFS, fs)
 		}
 	}

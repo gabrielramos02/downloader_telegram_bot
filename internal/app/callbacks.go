@@ -125,30 +125,17 @@ func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error 
 		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download deleted successfully."),
 	)
 	if err != nil {
-
 		return err
 	}
-	/// TODO This code is s*** fix it later
-	ok := strings.HasPrefix(
-		*query.Message.ReplyMarkup.InlineKeyboard[0][0].CallbackData,
-		fmt.Sprintf("%s:%s", ScopeDD, ActionInfo),
-	)
-	if ok {
-		if err = handleDirectDownloadRefreshList(query, id); err != nil {
-			return err
-		}
-	} else {
-		fmt.Printf(
-			"CallbackData: %s\n",
-			*query.Message.ReplyMarkup.InlineKeyboard[0][0].CallbackData,
-		)
-		if err = handleDirectDownloadRefresh(query, id); err != nil {
-			return err
-		}
+	isList := false
+	if query.Message.ReplyMarkup != nil {
+		_, action, _, ok := parseCallbackData(*query.Message.ReplyMarkup.InlineKeyboard[0][0].CallbackData)
+		isList = ok && action == ActionInfo
 	}
-	///
-
-	return err
+	if isList {
+		return handleDirectDownloadRefreshList(query, id)
+	}
+	return handleDirectDownloadRefresh(query, id)
 }
 
 func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
@@ -288,7 +275,9 @@ func handleStorageRefresh(query *tgbotapi.CallbackQuery, id string) error {
 		return err
 	}
 	msg = messages.BuildStorageInfo(query.Message.Chat.ID, fs)
-	msg.ReplyToMessageID = query.Message.ReplyToMessage.MessageID
+	if query.Message.ReplyToMessage != nil {
+		msg.ReplyToMessageID = query.Message.ReplyToMessage.MessageID
+	}
 	_, err = bot.Send(msg)
 	return err
 }
