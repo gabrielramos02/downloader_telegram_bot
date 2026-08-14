@@ -271,6 +271,9 @@ func handleStorageRefresh(query *tgbotapi.CallbackQuery, id string) error {
 
 func handleStorageClose(query *tgbotapi.CallbackQuery, id string) error {
 	_, err := bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.MessageID))
+	if err != nil {
+		return err
+	}
 	_, err = bot.Request(
 		tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.ReplyToMessage.MessageID),
 	)
