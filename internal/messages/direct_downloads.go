@@ -9,6 +9,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+const refreshListAction = "refresh_list"
+
 func BuildDirectDownloads(chatID int64, taskList []gopeed.GopeedTask) tgbotapi.MessageConfig {
 	var messageText string
 
@@ -89,6 +91,11 @@ func buildDirectDownloadKeyboard(taskList []gopeed.GopeedTask) tgbotapi.InlineKe
 		actionBtn := buildDirectDownloadActionButton(task)
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(infoBtn, actionBtn))
 	}
+	refreshBtn := tgbotapi.NewInlineKeyboardButtonData(
+		"🔄 Refresh",
+		fmt.Sprintf("dd:%s:", refreshListAction),
+	)
+	buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(refreshBtn))
 	return tgbotapi.NewInlineKeyboardMarkup(buttons...)
 }
 

@@ -142,8 +142,16 @@ func TestFormatGopeedStatus(t *testing.T) {
 
 func TestBuildDirectDownloadKeyboard(t *testing.T) {
 	t.Run("empty list", func(t *testing.T) {
-		if markup := buildDirectDownloadKeyboard(nil); len(markup.InlineKeyboard) != 0 {
-			t.Errorf("expected no rows, got %v", markup.InlineKeyboard)
+		markup := buildDirectDownloadKeyboard(nil)
+		if len(markup.InlineKeyboard) != 1 {
+			t.Errorf("expected only refresh row, got %v", markup.InlineKeyboard)
+		}
+		refreshBtn := markup.InlineKeyboard[0][0]
+		if refreshBtn.Text != "🔄 Refresh" {
+			t.Errorf("refresh button text = %q, want %q", refreshBtn.Text, "🔄 Refresh")
+		}
+		if refreshBtn.CallbackData == nil || *refreshBtn.CallbackData != "dd:refresh_list:" {
+			t.Errorf("refresh callback data = %v, want %q", refreshBtn.CallbackData, "dd:refresh_list:")
 		}
 	})
 	t.Run("two buttons per task", func(t *testing.T) {
@@ -152,8 +160,8 @@ func TestBuildDirectDownloadKeyboard(t *testing.T) {
 			{ID: "task2", Name: "Very Long Direct Download File Name", Status: gopeed.GopeedStatusDone},
 		}
 		markup := buildDirectDownloadKeyboard(tasks)
-		if len(markup.InlineKeyboard) != 2 {
-			t.Fatalf("expected 2 rows, got %d", len(markup.InlineKeyboard))
+		if len(markup.InlineKeyboard) != 3 {
+			t.Fatalf("expected 3 rows, got %d", len(markup.InlineKeyboard))
 		}
 		if len(markup.InlineKeyboard[0]) != 2 {
 			t.Fatalf("expected 2 buttons in first row, got %d", len(markup.InlineKeyboard[0]))
@@ -178,6 +186,17 @@ func TestBuildDirectDownloadKeyboard(t *testing.T) {
 		}
 		if deleteBtn.CallbackData == nil || *deleteBtn.CallbackData != "dd:delete:task2" {
 			t.Errorf("delete callback data = %v, want %q", deleteBtn.CallbackData, "dd:delete:task2")
+		}
+		refreshRow := markup.InlineKeyboard[2]
+		if len(refreshRow) != 1 {
+			t.Fatalf("expected 1 button in refresh row, got %d", len(refreshRow))
+		}
+		refreshBtn := refreshRow[0]
+		if refreshBtn.Text != "🔄 Refresh" {
+			t.Errorf("refresh button text = %q, want %q", refreshBtn.Text, "🔄 Refresh")
+		}
+		if refreshBtn.CallbackData == nil || *refreshBtn.CallbackData != "dd:refresh_list:" {
+			t.Errorf("refresh callback data = %v, want %q", refreshBtn.CallbackData, "dd:refresh_list:")
 		}
 	})
 }
@@ -426,9 +445,9 @@ func TestBuildDirectDownloadProgressUsesResourceSizeFallback(t *testing.T) {
 }
 
 func TestBuildDirectDownloadCancelMarkup(t *testing.T) {
-	markup := buildDirectDownloadCancelMarkup("task-abc")
-	if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
-		t.Fatalf("expected exactly one button row with one button, got %v", markup.InlineKeyboard)
+	markup := buildDirectDownloadCancelMarkup("task-abc", true)
+	if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 1 {
+		t.Fatalf("expected two rows, first with one button, got %v", markup.InlineKeyboard)
 	}
 	btn := markup.InlineKeyboard[0][0]
 	if btn.Text != "❌ Cancelar" {
@@ -437,6 +456,30 @@ func TestBuildDirectDownloadCancelMarkup(t *testing.T) {
 	if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:task-abc" {
 		t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:cancel:task-abc")
 	}
+	assertRefreshButton(t, markup, 1, "dd:refresh:task-abc")
+}
+
+func assertRefreshButton(
+	t *testing.T,
+	markup tgbotapi.InlineKeyboardMarkup,
+	rowIndex int,
+	callbackData string,
+) {
+	t.Helper()
+	if len(markup.InlineKeyboard) <= rowIndex {
+		t.Fatalf("expected row at index %d, got %v", rowIndex, markup.InlineKeyboard)
+	}
+	row := markup.InlineKeyboard[rowIndex]
+	if len(row) != 1 {
+		t.Fatalf("expected 1 button in refresh row, got %v", row)
+	}
+	btn := row[0]
+	if btn.Text != "🔄 Refresh" {
+		t.Errorf("refresh button text = %q, want %q", btn.Text, "🔄 Refresh")
+	}
+	if btn.CallbackData == nil || *btn.CallbackData != callbackData {
+		t.Errorf("refresh callback data = %v, want %q", btn.CallbackData, callbackData)
+	}
 }
 
 func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
@@ -444,9 +487,9 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
 			ID:     "t1",
 			Status: gopeed.GopeedStatusRunning,
-		})
-		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
-			t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+		}, true)
+		if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected two rows, first with two buttons, got %v", markup.InlineKeyboard)
 		}
 		left := markup.InlineKeyboard[0][0]
 		if left.Text != "⏸️ Pausar" {
@@ -459,14 +502,15 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 		if right.CallbackData == nil || *right.CallbackData != "dd:cancel:t1" {
 			t.Errorf("right callback data = %v, want %q", right.CallbackData, "dd:cancel:t1")
 		}
+		assertRefreshButton(t, markup, 1, "dd:refresh:t1")
 	})
 	t.Run("paused shows continue then cancel", func(t *testing.T) {
 		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
 			ID:     "t2",
 			Status: gopeed.GopeedStatusPause,
-		})
-		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
-			t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+		}, true)
+		if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 2 {
+			t.Fatalf("expected two rows, first with two buttons, got %v", markup.InlineKeyboard)
 		}
 		left := markup.InlineKeyboard[0][0]
 		if left.Text != "▶️ Continuar" {
@@ -479,14 +523,15 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 		if right.CallbackData == nil || *right.CallbackData != "dd:cancel:t2" {
 			t.Errorf("right callback data = %v, want %q", right.CallbackData, "dd:cancel:t2")
 		}
+		assertRefreshButton(t, markup, 1, "dd:refresh:t2")
 	})
 	t.Run("done shows delete", func(t *testing.T) {
 		markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{
 			ID:     "t4",
 			Status: gopeed.GopeedStatusDone,
-		})
-		if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
-			t.Fatalf("expected one row with one button, got %v", markup.InlineKeyboard)
+		}, true)
+		if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 1 {
+			t.Fatalf("expected two rows, first with one button, got %v", markup.InlineKeyboard)
 		}
 		btn := markup.InlineKeyboard[0][0]
 		if btn.Text != "🗑️ Eliminar" {
@@ -495,6 +540,7 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 		if btn.CallbackData == nil || *btn.CallbackData != "dd:delete:t4" {
 			t.Errorf("callback data = %v, want %q", btn.CallbackData, "dd:delete:t4")
 		}
+		assertRefreshButton(t, markup, 1, "dd:refresh:t4")
 	})
 	t.Run("other status only shows cancel", func(t *testing.T) {
 		for _, status := range []gopeed.GopeedStatus{
@@ -502,15 +548,16 @@ func TestBuildDirectDownloadInfoMarkup(t *testing.T) {
 			gopeed.GopeedStatusWait,
 			gopeed.GopeedStatusError,
 		} {
-			markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{ID: "t3", Status: status})
-			if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 1 {
-				t.Errorf("status %s: expected one row with one button, got %v", status, markup.InlineKeyboard)
+			markup := buildDirectDownloadInfoMarkup(gopeed.GopeedTask{ID: "t3", Status: status}, true)
+			if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 1 {
+				t.Errorf("status %s: expected two rows, first with one button, got %v", status, markup.InlineKeyboard)
 				continue
 			}
 			btn := markup.InlineKeyboard[0][0]
 			if btn.CallbackData == nil || *btn.CallbackData != "dd:cancel:t3" {
 				t.Errorf("status %s: callback data = %v, want %q", status, btn.CallbackData, "dd:cancel:t3")
 			}
+			assertRefreshButton(t, markup, 1, "dd:refresh:t3")
 		}
 	})
 }
@@ -554,8 +601,8 @@ func TestBuildDirectDownloadProgress(t *testing.T) {
 	if !ok {
 		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
 	}
-	if len(markup.InlineKeyboard) != 1 || len(markup.InlineKeyboard[0]) != 2 {
-		t.Fatalf("expected one row with two buttons, got %v", markup.InlineKeyboard)
+	if len(markup.InlineKeyboard) != 2 || len(markup.InlineKeyboard[0]) != 2 {
+		t.Fatalf("expected two rows, first with two buttons, got %v", markup.InlineKeyboard)
 	}
 	pauseBtn := markup.InlineKeyboard[0][0]
 	if pauseBtn.Text != "⏸️ Pausar" {
@@ -570,6 +617,39 @@ func TestBuildDirectDownloadProgress(t *testing.T) {
 	}
 	if cancelBtn.CallbackData == nil || *cancelBtn.CallbackData != "dd:cancel:dd-1" {
 		t.Errorf("cancel callback data = %v, want %q", cancelBtn.CallbackData, "dd:cancel:dd-1")
+	}
+	assertRefreshButton(t, markup, 1, "dd:refresh:dd-1")
+}
+
+func TestBuildDirectDownloadProgressAutoOmitsRefresh(t *testing.T) {
+	task := gopeed.GopeedTask{
+		ID:       "auto-1",
+		Protocol: "http",
+		Name:     "auto.iso",
+		Status:   gopeed.GopeedStatusRunning,
+		Size:     2147483648,
+		Progress: gopeed.GopeedProgress{
+			Downloaded: 1073741824,
+			Speed:      1048576,
+		},
+	}
+	msg := BuildDirectDownloadProgressAuto(9, task)
+	markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+	if !ok {
+		t.Fatalf("ReplyMarkup is %T, want InlineKeyboardMarkup", msg.ReplyMarkup)
+	}
+	if len(markup.InlineKeyboard) != 1 {
+		t.Fatalf("expected one row, got %v", markup.InlineKeyboard)
+	}
+	if len(markup.InlineKeyboard[0]) != 2 {
+		t.Fatalf("expected two action buttons, got %v", markup.InlineKeyboard[0])
+	}
+	for _, row := range markup.InlineKeyboard {
+		for _, btn := range row {
+			if btn.CallbackData != nil && *btn.CallbackData == "dd:refresh:auto-1" {
+				t.Errorf("auto progress message should not contain refresh button")
+			}
+		}
 	}
 }
 
