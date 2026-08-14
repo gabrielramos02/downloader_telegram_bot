@@ -7,21 +7,24 @@ import (
 	"strings"
 	"time"
 
+	gopeed "github.com/gabrielramos02/gopeed-api-go"
 	"github.com/gabrielramos02/telegram-bot-go/internal/glances"
 	"github.com/gabrielramos02/telegram-bot-go/internal/messages"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
+const RefreshList string = "refresh_list"
 
 type CallbackAction string
 
 const (
-	ActionCancel   CallbackAction = "cancel"
-	ActionInfo     CallbackAction = "info"
-	ActionRefresh  CallbackAction = "refresh"
-	ActionPause    CallbackAction = "pause"
-	ActionContinue CallbackAction = "continue"
-	ActionDelete   CallbackAction = "delete"
-	ActionClose    CallbackAction = "close"
+	ActionCancel      CallbackAction = "cancel"
+	ActionInfo        CallbackAction = "info"
+	ActionRefresh     CallbackAction = "refresh"
+	ActionRefreshList CallbackAction = "refresh_list"
+	ActionPause       CallbackAction = "pause"
+	ActionContinue    CallbackAction = "continue"
+	ActionDelete      CallbackAction = "delete"
+	ActionClose       CallbackAction = "close"
 )
 
 type CallbackScope string
@@ -33,12 +36,13 @@ const (
 
 var handlers = map[CallbackScope]map[CallbackAction]func(query *tgbotapi.CallbackQuery, id string) error{
 	ScopeDD: {
-		ActionCancel:   handleDirectDownloadCancel,
-		ActionInfo:     handleDirectDownloadInfo,
-		ActionRefresh:  handleDirectDownloadRefresh,
-		ActionPause:    handleDirectDownloadPause,
-		ActionContinue: handleDirectDownloadContinue,
-		ActionDelete:   handleDirectDownloadDelete,
+		ActionCancel:      handleDirectDownloadCancel,
+		ActionInfo:        handleDirectDownloadInfo,
+		ActionRefresh:     handleDirectDownloadRefresh,
+		ActionPause:       handleDirectDownloadPause,
+		ActionContinue:    handleDirectDownloadContinue,
+		ActionDelete:      handleDirectDownloadDelete,
+		ActionRefreshList: handleDirectDownloadRefreshList,
 	},
 	ScopeStorage: {
 		ActionRefresh: handleStorageRefresh,
@@ -94,25 +98,9 @@ func handleDirectDownloadCancel(query *tgbotapi.CallbackQuery, id string) error 
 	if err != nil {
 		return err
 	}
-	// err = db.UnlinkFileFromUser(context.Background(), database.UnlinkFileFromUserParams{
-	// 	FileID: id,
-	// 	UserID: query.Message.Chat.ID,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
 	_, err = bot.Request(
 		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download canceled successfully."),
 	)
-	if err != nil {
-		return err
-	}
-	_, err = bot.Send(
-		tgbotapi.NewEditMessageText(
-			query.Message.Chat.ID,
-			query.Message.MessageID,
-			"Direct download canceled successfully.",
-		))
 	return err
 }
 
@@ -128,13 +116,6 @@ func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error 
 	if err != nil {
 		return err
 	}
-	// err = db.UnlinkFileFromUser(context.Background(), database.UnlinkFileFromUserParams{
-	// 	FileID: id,
-	// 	UserID: query.Message.Chat.ID,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
 	goroutineKey := fmt.Sprintf("%d-%s", query.Message.Chat.ID, id)
 	if cancel, exists := cancelGoroutines[goroutineKey]; exists && cancel != nil {
 		cancel()
@@ -142,15 +123,6 @@ func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error 
 	_, err = bot.Request(
 		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download deleted successfully."),
 	)
-	if err != nil {
-		return err
-	}
-	_, err = bot.Send(
-		tgbotapi.NewEditMessageText(
-			query.Message.Chat.ID,
-			query.Message.MessageID,
-			"Direct download deleted successfully.",
-		))
 	return err
 }
 
@@ -178,8 +150,23 @@ func handleDirectDownloadInfo(query *tgbotapi.CallbackQuery, id string) error {
 func handleDirectDownloadRefresh(query *tgbotapi.CallbackQuery, id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	if id == RefreshList {
+		return handleDirectDownloadRefreshList(query, id)
+	}
 	task, err := gp.GetTask(ctx, id)
 	if err != nil {
+		if strings.Contains(err.Error(), "task not found") {
+			msg := tgbotapi.NewEditMessageText(
+				query.Message.Chat.ID,
+				query.Message.MessageID,
+				"Direct download deleted successfully.",
+			)
+			_, err = bot.Request(msg)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		return err
 	}
 	msg := messages.BuildDirectDownloadProgress(query.Message.Chat.ID, task)
@@ -283,6 +270,51 @@ func handleStorageRefresh(query *tgbotapi.CallbackQuery, id string) error {
 
 func handleStorageClose(query *tgbotapi.CallbackQuery, id string) error {
 	_, err := bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.MessageID))
-	_, err = bot.Request(tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.ReplyToMessage.MessageID))
+	_, err = bot.Request(
+		tgbotapi.NewDeleteMessage(query.Message.Chat.ID, query.Message.ReplyToMessage.MessageID),
+	)
 	return err
+}
+
+func handleDirectDownloadRefreshList(query *tgbotapi.CallbackQuery, id string) error {
+	chatID := query.Message.Chat.ID
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	user, err := db.GetUserByID(ctx, chatID)
+	if err != nil {
+		return err
+	}
+	userFiles, err := db.GetUserFiles(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	var tasks []gopeed.GopeedTask
+	if len(userFiles) > 0 {
+		var fileIDs []string
+		for _, userFile := range userFiles {
+			fileIDs = append(fileIDs, userFile.FileID)
+		}
+		tasks, err = gp.GetTasks(ctx, fileIDs, "")
+		if err != nil {
+			return err
+		}
+	}
+	var msg tgbotapi.MessageConfig
+	if len(tasks) == 0 {
+		msg = tgbotapi.NewMessage(chatID, "No direct download tasks found.")
+	} else {
+		msg = messages.BuildDirectDownloads(chatID, tasks)
+	}
+	var newMsg tgbotapi.EditMessageTextConfig
+	if markup, ok := msg.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup); ok {
+		newMsg = tgbotapi.NewEditMessageTextAndMarkup(
+			query.Message.Chat.ID,
+			query.Message.MessageID,
+			msg.Text,
+			markup,
+		)
+	}
+	_, err = bot.Send(newMsg)
+	return err
+
 }
