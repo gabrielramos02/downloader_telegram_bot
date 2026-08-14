@@ -124,6 +124,30 @@ func handleDirectDownloadDelete(query *tgbotapi.CallbackQuery, id string) error 
 	_, err = bot.Request(
 		tgbotapi.NewCallbackWithAlert(query.ID, "Direct download deleted successfully."),
 	)
+	if err != nil {
+
+		return err
+	}
+	/// TODO This code is s*** fix it later
+	ok := strings.HasPrefix(
+		*query.Message.ReplyMarkup.InlineKeyboard[0][0].CallbackData,
+		fmt.Sprintf("%s:%s", ScopeDD, ActionInfo),
+	)
+	if ok {
+		if err = handleDirectDownloadRefreshList(query, id); err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf(
+			"CallbackData: %s\n",
+			*query.Message.ReplyMarkup.InlineKeyboard[0][0].CallbackData,
+		)
+		if err = handleDirectDownloadRefresh(query, id); err != nil {
+			return err
+		}
+	}
+	///
+
 	return err
 }
 
