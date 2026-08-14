@@ -125,6 +125,15 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 			mutex.Lock()
 			delete(cancelGoroutines, ddInfo.ID)
 			mutex.Unlock()
+			_, err = bot.Send(
+				tgbotapi.NewEditMessageText(
+					chatID,
+					msgSended.MessageID,
+					"Direct download canceled successfully.",
+				))
+			if err != nil {
+				l.log.Error("Error sending message", slog.Any("error", err))
+			}
 			l.log.Debug(
 				"End of goroutine for MessageID",
 				slog.Int("messageid", msgSended.MessageID),
