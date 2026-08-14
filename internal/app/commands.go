@@ -83,9 +83,11 @@ func getDirectDownloads(message *tgbotapi.Message) error {
 }
 
 func getStorageInfo(message *tgbotapi.Message) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	chatID := message.Chat.ID
-	gl := glances.NewClient()
-	fs, err := gl.GetFS(context.Background())
+	gl := glances.NewClient(glances.WithTimeout(10 * time.Second))
+	fs, err := gl.GetFS(ctx)
 	if err != nil {
 		return err
 	}

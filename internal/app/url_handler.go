@@ -123,17 +123,8 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 		var err error
 		defer func() {
 			mutex.Lock()
-			delete(cancelGoroutines, ddInfo.ID)
+			delete(cancelGoroutines, goroutineKey)
 			mutex.Unlock()
-			_, err = bot.Send(
-				tgbotapi.NewEditMessageText(
-					chatID,
-					msgSended.MessageID,
-					"Direct download canceled successfully.",
-				))
-			if err != nil {
-				l.log.Error("Error sending message", slog.Any("error", err))
-			}
 			l.log.Debug(
 				"End of goroutine for MessageID",
 				slog.Int("messageid", msgSended.MessageID),
@@ -145,6 +136,15 @@ func sendDirectDownloadInfo(chatID int64, ddInfo gopeed.GopeedTask, msgSended tg
 		for ddInfo.Status != gopeed.GopeedStatusDone && ddInfo.Status != gopeed.GopeedStatusError {
 			select {
 			case <-ctx.Done():
+				_, err = bot.Send(
+					tgbotapi.NewEditMessageText(
+						chatID,
+						msgSended.MessageID,
+						"Direct download canceled successfully.",
+					))
+				if err != nil {
+					l.log.Error("Error sending message", slog.Any("error", err))
+				}
 				l.log.Debug(
 					"Cancelled goroutine for MessageID",
 					slog.Int("messageid", msgSended.MessageID),
