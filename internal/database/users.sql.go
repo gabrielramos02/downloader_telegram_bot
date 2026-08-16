@@ -11,10 +11,9 @@ import (
 	"time"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, subscription_id)
+const createUser = `-- name: CreateUser :exec
+INSERT OR IGNORE INTO users (id, created_at, updated_at, subscription_id)
 VALUES (?, ?, ?, ?)
-RETURNING id, created_at, updated_at, subscription_id
 `
 
 type CreateUserParams struct {
@@ -24,21 +23,14 @@ type CreateUserParams struct {
 	SubscriptionID sql.NullString
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser,
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
+	_, err := q.db.ExecContext(ctx, createUser,
 		arg.ID,
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.SubscriptionID,
 	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.SubscriptionID,
-	)
-	return i, err
+	return err
 }
 
 const deleteUser = `-- name: DeleteUser :exec

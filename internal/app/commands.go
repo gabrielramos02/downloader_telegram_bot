@@ -30,7 +30,7 @@ func sendStart(message *tgbotapi.Message) error {
 	chatID := message.Chat.ID
 	msg := tgbotapi.NewMessage(chatID, "Hello to my new bot")
 	msg.ParseMode = tgbotapi.ModeHTML
-	_, err := db.CreateUser(context.Background(), database.CreateUserParams{
+	err := db.CreateUser(context.Background(), database.CreateUserParams{
 		ID:        chatID,
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),

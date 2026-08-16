@@ -7,10 +7,9 @@ SELECT * FROM users ORDER BY created_at DESC;
 -- name: ListUsersWithSubscription :many
 SELECT * FROM users WHERE subscription_id IS NOT NULL;
 
--- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, subscription_id)
-VALUES (?, ?, ?, ?)
-RETURNING *;
+-- name: CreateUser :exec
+INSERT OR IGNORE INTO users (id, created_at, updated_at, subscription_id)
+VALUES (?, ?, ?, ?);
 
 -- name: UpdateUser :exec
 UPDATE users
